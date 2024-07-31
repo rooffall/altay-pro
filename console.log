@@ -1,0 +1,32 @@
+function transformSelectionToUppercase() {
+  const selection = window.getSelection();
+  const selectedText = selection.toString();
+  console.log('Selected text:', selectedText);
+  if (selectedText) {
+    const transformed = selectedText.toUpperCase();
+    console.log('Transformed text:', transformed);
+    replaceSelection(transformed);
+  }
+}
+
+function transformSelectionToLowercase() {
+  const selection = window.getSelection();
+  const selectedText = selection.toString();
+  console.log('Selected text:', selectedText);
+  if (selectedText) {
+    const transformed = selectedText.toLowerCase();
+    console.log('Transformed text:', transformed);
+    replaceSelection(transformed);
+  }
+}
+
+function replaceSelection(text) {
+  const selection = window.getSelection();
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+  const textNode = document.createTextNode(text);
+  range.insertNode(textNode);
+  range.collapse(false); // Move the cursor to the end of the inserted text
+  selection.removeAllRanges();
+  console.log('Replaced text:', text);
+}
