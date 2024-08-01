@@ -219,15 +219,15 @@ function copyCoordinates() {
   if (latitudeMatch && longitudeMatch) {
     const latitude = latitudeMatch[1];
     const longitude = longitudeMatch[1];
-    const coordinates = `Latitude: ${latitude}, Longitude: ${longitude}`;
+    const coordinates = `${latitude}, ${longitude}`;
     
     navigator.clipboard.writeText(coordinates).then(() => {
-      alert(`Copied coordinates: ${coordinates}`);
+      alert(`Скопированы координаты: ${coordinates}`);
     }).catch(err => {
-      console.error('Failed to copy coordinates: ', err);
+      console.error('Не удалось скопировать координаты: ', err);
     });
   } else {
-    alert('Coordinates not found');
+    alert('Координаты не найдены!');
   }
 }
 
@@ -243,7 +243,7 @@ function openInGoogleMaps() {
     
     window.open(googleMapsUrl, '_blank');
   } else {
-    alert('Coordinates not found');
+    alert('Координаты не найдены!');
   }
 }
 
