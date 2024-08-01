@@ -41,6 +41,12 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["page"]
   });
 
+  chrome.contextMenus.create({
+    id: "fillFields",
+    title: "Заполнить поля",
+    contexts: ["all"]
+  });
+
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -83,6 +89,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
       function: changeButtonText
+    });
+  } else if (info.menuItemId === "fillFields") {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: fillFields
     });
   }
 });
@@ -410,5 +421,92 @@ function addLanguageRow() {
     }, 1500); // Wait for 1.5 seconds before second click
   } else {
     alert('Add button not found');
+  }
+}
+
+function fillFields() {
+  const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
+
+  // Функция для получения значения из строки с "Тур. Название" (tr main)
+  function getTurMainValue() {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return null;
+    }
+
+    const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+    const turMainInput = inputs.find(input => {
+      let langField = null;
+      let typeField = null;
+      let parent = input.parentElement;
+      while (parent) {
+        langField = parent.querySelector('.select__control[name="lang"]');
+        typeField = parent.querySelector('.select__control[name="type"]');
+        if (langField && typeField) break;
+        parent = parent.parentElement;
+      }
+      if (!parent) {
+        console.log('Parent with lang and type fields not found for input:', input);
+        return false;
+      }
+      console.log('Checking input:', input);
+      console.log('Found langField:', langField);
+      console.log('Found typeField:', typeField);
+      return langField && langField.value === 'tr' && typeField && typeField.value === 'main';
+    });
+
+    if (turMainInput) {
+      console.log(`Found "Тур. Название" input: ${turMainInput.value}`);
+      return turMainInput.value;
+    } else {
+      console.log('No "Тур. Название" input found');
+      return null;
+    }
+  }
+
+  // Функция для установки значения в новое поле
+  function setNewValue(lang, type, value) {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+    const targetInput = inputs.find(input => {
+      let langField = null;
+      let typeField = null;
+      let parent = input.parentElement;
+      while (parent) {
+        langField = parent.querySelector('.select__control[name="lang"]');
+        typeField = parent.querySelector('.select__control[name="type"]');
+        if (langField && typeField) break;
+        parent = parent.parentElement;
+      }
+      if (!parent) {
+        console.log('Parent with lang and type fields not found for input:', input);
+        return false;
+      }
+      return langField && langField.value === lang && typeField && typeField.value === type;
+    });
+
+    if (targetInput) {
+      console.log(`Setting value "${value}" to input with lang "${lang}" and type "${type}"`);
+      targetInput.value = value;
+      targetInput.dispatchEvent(new Event('input'));
+      console.log(`Value set to "${value}"`);
+    } else {
+      console.log(`No input found with lang "${lang}" and type "${type}"`);
+    }
+  }
+
+  // Получим значение из строки с "Тур. Название"
+  const turMainValue = getTurMainValue();
+  if (turMainValue) {
+    // Вставим значение в новые поля
+    setNewValue('tr', 'short', turMainValue); // Тур. Короткие (tr short)
+    setNewValue('en', 'main', turMainValue); // Анг. Название (en main)
+    setNewValue('en', 'short', turMainValue); // Анг. Короткие (en short)
   }
 }
