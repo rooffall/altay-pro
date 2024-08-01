@@ -248,132 +248,166 @@ function openInGoogleMaps() {
 }
 
 function addLanguageRow() {
-  // Сначала изменим текст "Рус." на "Анг." и значение языка на "en"
-  const buttons = document.querySelectorAll('.button__text');
-  buttons.forEach(buttonText => {
-    console.log(`Found button text: ${buttonText.innerText}`);
-    if (buttonText.innerText.trim() === 'Рус.') {
-      buttonText.innerText = 'Анг.';
-      console.log('Button text changed to "Анг."');
-    } else {
-      console.log(`Button text is not "Рус.": ${buttonText.innerText}`);
-    }
-  });
+  const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
 
-  if (buttons.length === 0) {
-    console.log('No buttons with class "button__text" found');
+  // Функция для изменения текста "Рус." на целевой текст внутри указанной формы
+  function changeLastRusTextTo(targetText) {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const buttons = Array.from(form.querySelectorAll('.button__text'));
+    const rusButtons = buttons.filter(button => button.innerText.trim() === 'Рус.');
+    console.log(`Found ${rusButtons.length} buttons with text "Рус." inside the target form`);
+
+    rusButtons.forEach((button, index) => {
+      console.log(`Button ${index + 1}: ${button.outerHTML}`);
+    });
+
+    if (rusButtons.length > 0) {
+      const lastRusButton = rusButtons[rusButtons.length - 1];
+      console.log(`Changing button text "${lastRusButton.innerText}" to "${targetText}"`);
+      lastRusButton.innerText = targetText;
+      console.log(`Last button text changed to "${targetText}"`);
+    } else {
+      console.log('No button with text "Рус." found to change');
+    }
   }
 
-  const langFieldsEn = document.querySelectorAll('.select__control[name="lang"]');
-  langFieldsEn.forEach(field => {
-    if (field.value === 'ru') {
-      field.value = 'en';
-      field.dispatchEvent(new Event('change'));
-      console.log('Language field changed to "en"');
+  // Функция для изменения значения языка "ru" на целевое значение внутри указанной формы
+  function changeLastRusFieldTo(langValue) {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
     }
-  });
 
-  // Сохраним исходные поля с именем "type"
-  const originalTypeFields = new Set();
-  document.querySelectorAll('.select__control[name="type"]').forEach(field => {
-    originalTypeFields.add(field);
-  });
+    const langFields = Array.from(form.querySelectorAll('.select__control[name="lang"]'));
+    console.log(`Total language fields inside the form: ${langFields.length}`);
+    langFields.forEach((field, index) => {
+      console.log(`Language field ${index + 1}: ${field.outerHTML}`);
+    });
 
-  // Сохраним исходные кнопки "Названия"
-  const originalNameButtons = new Set();
-  document.querySelectorAll('.button__text').forEach(button => {
-    if (button.innerText.trim() === 'Названия') {
-      originalNameButtons.add(button);
+    const rusLangFields = langFields.filter(field => field.value === 'ru' && isVisible(field));
+    console.log(`Found ${rusLangFields.length} visible language fields with value "ru" inside the target form`);
+
+    rusLangFields.forEach((field, index) => {
+      console.log(`Lang field ${index + 1}: ${field.outerHTML}`);
+    });
+
+    if (rusLangFields.length > 0) {
+      const lastRusLangField = rusLangFields[rusLangFields.length - 1];
+      console.log(`Changing language field value "${lastRusLangField.value}" to "${langValue}"`);
+      lastRusLangField.value = langValue;
+      lastRusLangField.dispatchEvent(new Event('change'));
+      console.log(`Last language field changed to "${langValue}"`);
+    } else {
+      console.log('No visible "ru" language field found to change');
     }
-  });
+  }
+
+  // Функция для изменения значения типа "main" на "short" внутри указанной формы
+  function changeLastTypeFieldToShort() {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const typeFields = Array.from(form.querySelectorAll('.select__control[name="type"]'));
+    console.log(`Total type fields inside the form: ${typeFields.length}`);
+    typeFields.forEach((field, index) => {
+      console.log(`Type field ${index + 1}: ${field.outerHTML}`);
+    });
+
+    const mainTypeFields = typeFields.filter(field => field.value === 'main' && isVisible(field));
+    console.log(`Found ${mainTypeFields.length} visible type fields with value "main" inside the target form`);
+
+    mainTypeFields.forEach((field, index) => {
+      console.log(`Type field ${index + 1}: ${field.outerHTML}`);
+    });
+
+    if (mainTypeFields.length > 0) {
+      const lastMainTypeField = mainTypeFields[mainTypeFields.length - 1];
+      console.log(`Changing type field value "${lastMainTypeField.value}" to "short"`);
+      lastMainTypeField.value = 'short';
+      lastMainTypeField.dispatchEvent(new Event('change'));
+      console.log(`Last type field changed to "short"`);
+    } else {
+      console.log('No visible "main" type field found to change');
+    }
+  }
+
+  // Функция для изменения текста "Названия" на "Короткие" внутри указанной формы
+  function changeLastNameTextToShort() {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const nameButtons = Array.from(form.querySelectorAll('.button__text'));
+    const nameFields = nameButtons.filter(button => button.innerText.trim() === 'Названия');
+    console.log(`Found ${nameFields.length} buttons with text "Названия" inside the target form`);
+
+    nameFields.forEach((button, index) => {
+      console.log(`Name field ${index + 1}: ${button.outerHTML}`);
+    });
+
+    if (nameFields.length > 0) {
+      const lastNameField = nameFields[nameFields.length - 1];
+      console.log(`Changing name field text "${lastNameField.innerText}" to "Короткие"`);
+      lastNameField.innerText = 'Короткие';
+      console.log(`Last name field text changed to "Короткие"`);
+    } else {
+      console.log('No button with text "Названия" found to change');
+    }
+  }
+
+  // Проверка, виден ли элемент
+  function isVisible(element) {
+    return !(element.style.display === 'none' || element.style.visibility === 'hidden');
+  }
+
+  // Сохраним исходные поля с именем "type" и "button__text" внутри формы
+  const form = document.querySelector(formSelector);
+  if (!form) {
+    console.log('Target form not found');
+    return;
+  }
+
+  const originalTypeFields = new Set(form.querySelectorAll('.select__control[name="type"]'));
+  const originalNameButtons = new Set(form.querySelectorAll('.button__text'));
+
+  // Шаг 1: Меняем последнюю строку "Рус." на "Тур.", "ru" на "tr" и "main" на "short"
+  changeLastRusTextTo('Тур.');
+  changeLastRusFieldTo('tr');
+  changeLastTypeFieldToShort();
+  changeLastNameTextToShort();
 
   // Нажмем первый раз на плюсик
-  const addButton = document.querySelector('.card-section__icon-add.card-section__add');
+  const addButton = form.querySelector('.card-section__icon-add.card-section__add');
   if (addButton) {
+    console.log('First click on add button');
     addButton.click();
     setTimeout(() => {
-      // Изменим текст "Рус." на "Тур." и значение языка на "tr"
-      const buttonsAfterFirstClick = document.querySelectorAll('.button__text');
-      buttonsAfterFirstClick.forEach(buttonText => {
-        console.log(`After first click found button text: ${buttonText.innerText}`);
-        if (buttonText.innerText.trim() === 'Рус.') {
-          buttonText.innerText = 'Тур.';
-          console.log('Button text changed to "Тур."');
-        } else {
-          console.log(`Button text is not "Рус.": ${buttonText.innerText}`);
-        }
-      });
-
-      const langFieldsTr = document.querySelectorAll('.select__control[name="lang"]');
-      langFieldsTr.forEach(field => {
-        if (field.value === 'ru') {
-          field.value = 'tr';
-          field.dispatchEvent(new Event('change'));
-          console.log('Language field changed to "tr"');
-        }
-      });
-
-      // Изменим только новые поля ввода "Названия" на "Короткие"
-      const newTypeFields = document.querySelectorAll('.select__control[name="type"]');
-      newTypeFields.forEach(field => {
-        if (field.value === 'main' && !originalTypeFields.has(field)) {
-          field.value = 'short';
-          field.dispatchEvent(new Event('change'));
-          console.log('Type field changed to "short"');
-        }
-      });
-
-      const newNameButtons = document.querySelectorAll('.button__text');
-      newNameButtons.forEach(button => {
-        if (button.innerText.trim() === 'Названия' && !originalNameButtons.has(button)) {
-          button.innerText = 'Короткие';
-          console.log('Button text changed to "Короткие"');
-        }
-      });
+      // Шаг 2: Меняем "Рус." на "Анг." и "ru" на "en"
+      changeLastRusTextTo('Анг.');
+      changeLastRusFieldTo('en');
 
       // Нажмем второй раз на плюсик
+      console.log('Second click on add button');
       addButton.click();
       setTimeout(() => {
-        // Изменим текст "Рус." на "Анг." и значение языка на "en"
-        const buttonsAfterSecondClick = document.querySelectorAll('.button__text');
-        buttonsAfterSecondClick.forEach(buttonText => {
-          console.log(`After second click found button text: ${buttonText.innerText}`);
-          if (buttonText.innerText.trim() === 'Рус.') {
-            buttonText.innerText = 'Анг.';
-            console.log('Button text changed to "Анг."');
-          } else {
-            console.log(`Button text is not "Рус.": ${buttonText.innerText}`);
-          }
-        });
-
-        const langFieldsEnAgain = document.querySelectorAll('.select__control[name="lang"]');
-        langFieldsEnAgain.forEach(field => {
-          if (field.value === 'ru') {
-            field.value = 'en';
-            field.dispatchEvent(new Event('change'));
-            console.log('Language field changed to "en"');
-          }
-        });
-
-        // Изменим только новые поля ввода "Названия" на "Короткие"
-        const newTypeFieldsAgain = document.querySelectorAll('.select__control[name="type"]');
-        newTypeFieldsAgain.forEach(field => {
-          if (field.value === 'main' && !originalTypeFields.has(field)) {
-            field.value = 'short';
-            field.dispatchEvent(new Event('change'));
-            console.log('Type field changed to "short"');
-          }
-        });
-
-        const newNameButtonsAgain = document.querySelectorAll('.button__text');
-        newNameButtonsAgain.forEach(button => {
-          if (button.innerText.trim() === 'Названия' && !originalNameButtons.has(button)) {
-            button.innerText = 'Короткие';
-            console.log('Button text changed to "Короткие"');
-          }
-        });
-      }, 1000); // Wait for 1 second to allow the new field to be added
-    }, 500); // Wait for 0.5 second before second click
+        // Шаг 3: Меняем "Рус." на "Анг.", "ru" на "en" и "main" на "short"
+        changeLastRusTextTo('Анг.');
+        changeLastRusFieldTo('en');
+        changeLastTypeFieldToShort();
+        changeLastNameTextToShort();
+      }, 1500); // Wait for 1.5 seconds to allow the new field to be added
+    }, 1500); // Wait for 1.5 seconds before second click
   } else {
     alert('Add button not found');
   }
