@@ -1,51 +1,129 @@
 chrome.runtime.onInstalled.addListener(() => {
+  // Список основных меню.
+
+  chrome.contextMenus.create({
+    id: "transformText",
+    title: "Редактор текста",
+    contexts: ["selection"]
+  });
+
+  chrome.contextMenus.create({
+    id: "autoCard",
+    title: "Редактирование карточки",
+    contexts: ["page"]
+  });
+
+  chrome.contextMenus.create({
+    id: "coordinates",
+    title: "Работа с координатами",
+    contexts: ["page"]
+  });
+
+
+
+
+  //////////////////////// ПОДМЕНЮ ///////////////////////
+
+
+  //////////////////////
+  ////////////////////// autoCard menu
+
+  chrome.contextMenus.create({
+    id: "addNameRow",
+    title: "Создание строчек для названий",
+    parentId: "autoCard",
+    contexts: ["page"]
+  });
+
+  ////////////////////// autoFill menu
+
+  // Создаем подменю
+  chrome.contextMenus.create({
+    id: "autoFill",
+    title: "Автоматическое заполнение названий",
+    parentId: "autoCard",
+    contexts: ["all"]
+  });
+
+  // Создаем подменю для автоматического заполнения названий
+  chrome.contextMenus.create({
+    id: "autoFillNames",
+    title: "Автоматически заполнить названия",
+    parentId: "autoFill",
+    contexts: ["page"]
+  });
+  // TODO
+  chrome.contextMenus.create({
+    id: "autoFillNamesWithTranslation",
+    title: "Автоматически заполнить названия с переводом",
+    parentId: "autoFill",
+    contexts: ["page"]
+  });
+
+  chrome.contextMenus.create({
+    id: "manualFillNames",
+    title: "Ручное заполнение названий по выделенному слову",
+    parentId: "autoFill",
+    contexts: ["selection"]
+  });
+
+
+  //////////////////////
+  ////////////////////// transformText menu
+
   chrome.contextMenus.create({
     id: "transformToUppercase",
-    title: "Transform to Uppercase",
+    title: "Преобразовать в заглавные",
+    parentId: "transformText",
     contexts: ["selection"]
   });
 
   chrome.contextMenus.create({
     id: "transformToLowercase",
-    title: "Transform to Lowercase",
+    title: "Преобразовать в строчные",
+    parentId: "transformText",
     contexts: ["selection"]
   });
 
   chrome.contextMenus.create({
     id: "transformToCapitalize",
-    title: "Capitalize First Letter",
+    title: "Первая буква заглавная",
+    parentId: "transformText",
     contexts: ["selection"]
   });
 
   chrome.contextMenus.create({
     id: "transformToTitleCase",
-    title: "Capitalize First Letter of Each Word",
+    title: "Заглавные буквы в каждом слове",
+    parentId: "transformText",
     contexts: ["selection"]
   });
 
+
+  //////////////////////
+  ////////////////////// googleMaps menu
+
   chrome.contextMenus.create({
     id: "copyCoordinates",
-    title: "Copy Coordinates",
+    title: "Скопировать координаты",
+    parentId: "coordinates",
+    contexts: ["page"]
+  });
+
+  chrome.contextMenus.create({
+    id: "openInYandexMaps",
+    title: "Открыть в Yandex Maps",
+    parentId: "coordinates",
     contexts: ["page"]
   });
 
   chrome.contextMenus.create({
     id: "openInGoogleMaps",
-    title: "Open in Google Maps",
+    title: "Открыть в Google Maps",
+    parentId: "coordinates",
     contexts: ["page"]
   });
 
-  chrome.contextMenus.create({
-    id: "addLanguageRow",
-    title: "Add Language Row",
-    contexts: ["page"]
-  });
-
-  chrome.contextMenus.create({
-    id: "fillFields",
-    title: "Заполнить поля",
-    contexts: ["all"]
-  });
 
 });
 
@@ -80,24 +158,45 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       target: { tabId: tab.id },
       function: openInGoogleMaps
     });
-  } else if (info.menuItemId === "addLanguageRow") {
+  } else if (info.menuItemId === "openInYandexMaps") {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      function: addLanguageRow
+      function: openInYandexMaps
     });
-  } else if (info.menuItemId === "changeButtonText") {
+  } else if (info.menuItemId === "addNameRow") {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      function: changeButtonText
+      function: addNameRow
     });
-  } else if (info.menuItemId === "fillFields") {
+  } else if (info.menuItemId === "autoFillNames") {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      function: fillFields
+      function: autoFillNames
+    });
+  } else if (info.menuItemId === "autoFillNamesWithTranslation") {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: autoFillNamesWithTranslation
+    });
+    //TODO
+  } else if (info.menuItemId === "manualFillNames") {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: manualFillNames
     });
   }
 });
 
+
+function autoFillNamesWithTranslation() {
+  console.log("Автоматическое заполнение названий с переводом");
+}
+
+function manualFillNames() {
+  console.log("Ручное заполнение названий по выделенному слову");
+}
+
+// Функции для существующего контекстного меню
 function transformSelectionToUppercase() {
   handleTextTransformation(text => text.toUpperCase());
 
@@ -242,6 +341,7 @@ function copyCoordinates() {
   }
 }
 
+
 function openInGoogleMaps() {
   const bodyText = document.body.innerText;
   const latitudeMatch = bodyText.match(/Широта:\s*([\d.]+)/);
@@ -258,7 +358,23 @@ function openInGoogleMaps() {
   }
 }
 
-function addLanguageRow() {
+function openInYandexMaps() {
+  const bodyText = document.body.innerText;
+  const latitudeMatch = bodyText.match(/Широта:\s*([\d.]+)/);
+  const longitudeMatch = bodyText.match(/Долгота:\s*([\d.]+)/);
+
+  if (latitudeMatch && longitudeMatch) {
+    const latitude = latitudeMatch[1];
+    const longitude = longitudeMatch[1];
+    const yandexMapsUrl = `https://yandex.ru/maps/?text=${latitude},${longitude}`;
+    
+    window.open(yandexMapsUrl, '_blank');
+  } else {
+    alert('Координаты не найдены!');
+  }
+}
+
+function addNameRow() {
   const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
 
   // Функция для изменения текста "Рус." на целевой текст внутри указанной формы
@@ -424,7 +540,7 @@ function addLanguageRow() {
   }
 }
 
-function fillFields() {
+function autoFillNames() {
   const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
 
   // Функция для получения значения из строки с "Тур. Название" (tr main)
