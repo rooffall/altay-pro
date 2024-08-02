@@ -8,18 +8,16 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 
   chrome.contextMenus.create({
-    id: "autoCard",
-    title: "Редактирование карточки",
-    contexts: ["page"]
-  });
-
-  chrome.contextMenus.create({
     id: "coordinates",
     title: "Работа с координатами",
     contexts: ["page"]
   });
 
-
+  chrome.contextMenus.create({
+    id: "autoCard",
+    title: "Редактирование карточки",
+    contexts: ["page"]
+  });
 
 
   //////////////////////// ПОДМЕНЮ ///////////////////////
@@ -533,8 +531,8 @@ function addNameRow() {
         changeLastRusFieldTo('en');
         changeLastTypeFieldToShort();
         changeLastNameTextToShort();
-      }, 1500); // Wait for 1.5 seconds to allow the new field to be added
-    }, 1500); // Wait for 1.5 seconds before second click
+      }, 850); // Wait for 0.8 seconds to allow the new field to be added
+    }, 850); // Wait for 0.8 seconds before second click
   } else {
     alert('Add button not found');
   }
