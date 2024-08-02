@@ -186,13 +186,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 
-function autoFillNamesWithTranslation() {
-  console.log("Автоматическое заполнение названий с переводом");
-}
-
-function manualFillNames() {
-  console.log("Ручное заполнение названий по выделенному слову");
-}
 
 // Функции для существующего контекстного меню
 function transformSelectionToUppercase() {
@@ -623,4 +616,12 @@ function autoFillNames() {
     setNewValue('en', 'main', turMainValue); // Анг. Название (en main)
     setNewValue('en', 'short', turMainValue); // Анг. Короткие (en short)
   }
+}
+
+function autoFillNamesWithTranslation() {
+  console.log("Автоматическое заполнение названий с переводом");
+}
+
+function manualFillNames() {
+  console.log("Ручное заполнение названий по выделенному слову");
 }
