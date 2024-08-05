@@ -1,5 +1,5 @@
 {
-  "name": "BurstAltay",
+  "name": "AltayPro",
   "version": "2.2.1",
   "description": "Сделано для работы в Алтае",
   "manifest_version": 3,
@@ -12,7 +12,6 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icon.png",
       "48": "icon.png",
