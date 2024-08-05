@@ -7,11 +7,6 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["selection"]
   });
 
-  chrome.contextMenus.create({
-    id: "coordinates",
-    title: "Работа с координатами",
-    contexts: ["page"]
-  });
 
   chrome.contextMenus.create({
     id: "autoCard",
@@ -19,6 +14,11 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["page"]
   });
 
+  chrome.contextMenus.create({
+    id: "coordinates",
+    title: "Работа с координатами",
+    contexts: ["page"]
+  });
 
   //////////////////////// ПОДМЕНЮ ///////////////////////
 
@@ -33,6 +33,7 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["page"]
   });
 
+
   ////////////////////// autoFill menu
 
   // Создаем подменю
@@ -46,7 +47,7 @@ chrome.runtime.onInstalled.addListener(() => {
   // Создаем подменю для автоматического заполнения названий
   chrome.contextMenus.create({
     id: "autoFillNames",
-    title: "Автоматически заполнить названия",
+    title: "Автоматически заполнить названия без перевода",
     parentId: "autoFill",
     contexts: ["page"]
   });
@@ -64,6 +65,7 @@ chrome.runtime.onInstalled.addListener(() => {
     parentId: "autoFill",
     contexts: ["selection"]
   });
+
 
 
   //////////////////////
@@ -101,16 +103,18 @@ chrome.runtime.onInstalled.addListener(() => {
   //////////////////////
   ////////////////////// googleMaps menu
 
-  chrome.contextMenus.create({
-    id: "copyCoordinates",
-    title: "Скопировать координаты",
-    parentId: "coordinates",
-    contexts: ["page"]
-  });
+ 
 
   chrome.contextMenus.create({
     id: "openInYandexMaps",
     title: "Открыть в Yandex Maps",
+    parentId: "coordinates",
+    contexts: ["page"]
+  });
+
+ chrome.contextMenus.create({
+    id: "copyCoordinates",
+    title: "Скопировать координаты",
     parentId: "coordinates",
     contexts: ["page"]
   });
@@ -618,10 +622,122 @@ function autoFillNames() {
   }
 }
 
-function autoFillNamesWithTranslation() {
-  console.log("Автоматическое заполнение названий с переводом");
+
+async function autoFillNamesWithTranslation() {
+  const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
+  const response = await fetch(chrome.runtime.getURL('config.json'));
+  const config = await response.json();
+  const API_KEY = config.googleCloudApiKey;
+
+  // Функция для получения значения из строки с "Тур. Название" (tr main)
+  function getTurMainValue() {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return null;
+    }
+
+    const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+    const turMainInput = inputs.find(input => {
+      let langField = null;
+      let typeField = null;
+      let parent = input.parentElement;
+      while (parent) {
+        langField = parent.querySelector('.select__control[name="lang"]');
+        typeField = parent.querySelector('.select__control[name="type"]');
+        if (langField && typeField) break;
+        parent = parent.parentElement;
+      }
+      if (!parent) {
+        console.log('Parent with lang and type fields not found for input:', input);
+        return false;
+      }
+      console.log('Checking input:', input);
+      console.log('Found langField:', langField);
+      console.log('Found typeField:', typeField);
+      return langField && langField.value === 'tr' && typeField && typeField.value === 'main';
+    });
+
+    if (turMainInput) {
+      console.log(`Found "Тур. Название" input: ${turMainInput.value}`);
+      return turMainInput.value;
+    } else {
+      console.log('No "Тур. Название" input found');
+      return null;
+    }
+  }
+
+  // Функция для установки значения в новое поле
+  function setNewValue(lang, type, value) {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+    const targetInput = inputs.find(input => {
+      let langField = null;
+      let typeField = null;
+      let parent = input.parentElement;
+      while (parent) {
+        langField = parent.querySelector('.select__control[name="lang"]');
+        typeField = parent.querySelector('.select__control[name="type"]');
+        if (langField && typeField) break;
+        parent = parent.parentElement;
+      }
+      if (!parent) {
+        console.log('Parent with lang and type fields not found for input:', input);
+        return false;
+      }
+      return langField && langField.value === lang && typeField && typeField.value === type;
+    });
+
+    if (targetInput) {
+      console.log(`Setting value "${value}" to input with lang "${lang}" and type "${type}"`);
+      targetInput.value = value;
+      targetInput.dispatchEvent(new Event('input'));
+      console.log(`Value set to "${value}"`);
+    } else {
+      console.log(`No input found with lang "${lang}" and type "${type}"`);
+    }
+  }
+
+  // Функция для перевода текста с помощью Google Cloud Translation API
+  async function translateText(text, targetLang) {
+    const response = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        q: text,
+        target: targetLang,
+        format: 'text'
+      })
+    });
+
+    const data = await response.json();
+    return data.data.translations[0].translatedText;
+  }
+
+  // Получим значение из строки с "Тур. Название"
+  const turMainValue = getTurMainValue();
+  if (turMainValue) {
+    // Переведем значение и вставим его в новые поля
+    const turShortValue = turMainValue; // Тур. Короткие (tr short) остаются такими же
+    const enMainValue = await translateText(turMainValue, 'en'); // Анг. Название (en main)
+    const enShortValue = await translateText(turMainValue, 'en'); // Анг. Короткие (en short) можно также перевести
+
+    setNewValue('tr', 'short', turShortValue);
+    setNewValue('en', 'main', enMainValue);
+    setNewValue('en', 'short', enShortValue);
+  }
 }
+
+
 
 function manualFillNames() {
   console.log("Ручное заполнение названий по выделенному слову");
 }
+
