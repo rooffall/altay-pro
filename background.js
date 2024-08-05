@@ -191,7 +191,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 
 
-// Функции для существующего контекстного меню
 function transformSelectionToUppercase() {
   handleTextTransformation(text => text.toUpperCase());
 
@@ -202,6 +201,12 @@ function transformSelectionToUppercase() {
 
     if (selectedText) {
       const transformed = transformFn(selectedText);
+
+      navigator.clipboard.writeText(transformed).then(() => {
+      }).catch(err => {
+        console.error('Не удалось скопировать текст: ', err);
+      });
+
 
       if (activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'INPUT') {
         const start = activeElement.selectionStart;
@@ -234,6 +239,11 @@ function transformSelectionToLowercase() {
     if (selectedText) {
       const transformed = transformFn(selectedText);
 
+      navigator.clipboard.writeText(transformed).then(() => {
+      }).catch(err => {
+        console.error('Не удалось скопировать текст: ', err);
+      });
+
       if (activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'INPUT') {
         const start = activeElement.selectionStart;
         const end = activeElement.selectionEnd;
@@ -265,6 +275,12 @@ function transformSelectionToCapitalize() {
     if (selectedText) {
       const transformed = transformFn(selectedText);
 
+      navigator.clipboard.writeText(transformed).then(() => {
+      }).catch(err => {
+        console.error('Не удалось скопировать текст: ', err);
+      });
+
+
       if (activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'INPUT') {
         const start = activeElement.selectionStart;
         const end = activeElement.selectionEnd;
@@ -286,7 +302,8 @@ function transformSelectionToCapitalize() {
 }
 
 function transformSelectionToTitleCase() {
-  handleTextTransformation(text => text.replace(/\b\w/g, char => char.toUpperCase()));
+  handleTextTransformation(text => text.replace(/\p{Alphabetic}\S*/gu, 
+    word => word.charAt(0).toUpperCase() + word.substring(1).toLowerCase()));
 
   function handleTextTransformation(transformFn) {
     const activeElement = document.activeElement;
@@ -295,6 +312,12 @@ function transformSelectionToTitleCase() {
 
     if (selectedText) {
       const transformed = transformFn(selectedText);
+
+      navigator.clipboard.writeText(transformed).then(() => {
+        console.log('Текст успешно скопирован в буфер обмена!');
+      }).catch(err => {
+        console.error('Ошибка при копировании текста: ', err);
+      });
 
       if (activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'INPUT') {
         const start = activeElement.selectionStart;
@@ -316,6 +339,9 @@ function transformSelectionToTitleCase() {
   }
 }
 
+
+
+
 function copyCoordinates() {
   const bodyText = document.body.innerText;
   const latitudeMatch = bodyText.match(/Широта:\s*([\d.]+)/);
@@ -327,12 +353,13 @@ function copyCoordinates() {
     const coordinates = `${latitude}, ${longitude}`;
     
     navigator.clipboard.writeText(coordinates).then(() => {
-      alert(`Скопированы координаты: ${coordinates}`);
     }).catch(err => {
+      alert(`Не удалось скопировать координаты, проверьте консоль на ошибки!`);
       console.error('Не удалось скопировать координаты: ', err);
     });
   } else {
     alert('Координаты не найдены!');
+    console.error('Не удалось скопировать координаты: ', err);
   }
 }
 
