@@ -7,11 +7,10 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["selection"]
   });
 
-
   chrome.contextMenus.create({
     id: "autoCard",
     title: "Редактирование карточки",
-    contexts: ["page"]
+    contexts: ["all"]
   });
 
   chrome.contextMenus.create({
@@ -34,11 +33,11 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 
 
-  ////////////////////// autoFill menu
+  ////////////////////// autoFill name menu
 
   // Создаем подменю
   chrome.contextMenus.create({
-    id: "autoFill",
+    id: "autoFillRowNames",
     title: "Автоматическое заполнение названий",
     parentId: "autoCard",
     contexts: ["all"]
@@ -48,24 +47,30 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "autoFillNames",
     title: "Автоматически заполнить названия без перевода",
-    parentId: "autoFill",
+    parentId: "autoFillRowNames",
     contexts: ["page"]
   });
-  // TODO
+
   chrome.contextMenus.create({
     id: "autoFillNamesWithTranslation",
     title: "Автоматически заполнить названия с переводом",
-    parentId: "autoFill",
+    parentId: "autoFillRowNames",
     contexts: ["page"]
   });
 
   chrome.contextMenus.create({
     id: "manualFillNames",
     title: "Ручное заполнение названий по выделенному слову",
-    parentId: "autoFill",
+    parentId: "autoFillRowNames",
     contexts: ["selection"]
   });
 
+  chrome.contextMenus.create({
+    id: "manualFillShortNames",
+    title: "Ручное заполнение коротких названий по выделенному слову",
+    parentId: "autoFillRowNames",
+    contexts: ["selection"]
+  });
 
 
   //////////////////////
@@ -186,8 +191,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       target: { tabId: tab.id },
       function: manualFillNames
     });
+  } else if (info.menuItemId === "manualFillShortNames") {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: manualFillShortNames
+    });
   }
 });
+
 
 
 
@@ -339,7 +350,7 @@ function transformSelectionToTitleCase() {
   }
 }
 
-
+ 
 
 
 function copyCoordinates() {
@@ -530,11 +541,9 @@ function addNameRow() {
   const originalTypeFields = new Set(form.querySelectorAll('.select__control[name="type"]'));
   const originalNameButtons = new Set(form.querySelectorAll('.button__text'));
 
-  // Шаг 1: Меняем последнюю строку "Рус." на "Тур.", "ru" на "tr" и "main" на "short"
-  changeLastRusTextTo('Тур.');
-  changeLastRusFieldTo('tr');
-  changeLastTypeFieldToShort();
-  changeLastNameTextToShort();
+  // Шаг 1: Меняем последнюю строку "Рус." на "Анг.", "ru" на "en"
+  changeLastRusTextTo('Анг.');
+  changeLastRusFieldTo('en');
 
   // Нажмем первый раз на плюсик
   const addButton = form.querySelector('.card-section__icon-add.card-section__add');
@@ -542,15 +551,17 @@ function addNameRow() {
     console.log('First click on add button');
     addButton.click();
     setTimeout(() => {
-      // Шаг 2: Меняем "Рус." на "Анг." и "ru" на "en"
-      changeLastRusTextTo('Анг.');
-      changeLastRusFieldTo('en');
+      // Шаг 2: Меняем "Рус." на "Тур.", "ru" на "tr" и "main" на "short"
+      changeLastRusTextTo('Тур.');
+      changeLastRusFieldTo('tr');
+      changeLastTypeFieldToShort();
+      changeLastNameTextToShort();
 
       // Нажмем второй раз на плюсик
       console.log('Second click on add button');
       addButton.click();
       setTimeout(() => {
-        // Шаг 3: Меняем "Рус." на "Анг.", "ru" на "en" и "main" на "short"
+        // Шаг 3: Меняем "Рус." на "Анг." и "ru" на "en" и "main" на "short"
         changeLastRusTextTo('Анг.');
         changeLastRusFieldTo('en');
         changeLastTypeFieldToShort();
@@ -564,6 +575,20 @@ function addNameRow() {
 
 function autoFillNames() {
   const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
+
+  // Функция для замены символов
+  function replaceTurkishChars(text) {
+    const replacements = {
+      "Ş": "S", "ş": "s",
+      "Ç": "C", "ç": "c",
+      "Ğ": "G", "ğ": "g",
+      "İ": "I", "ı": "i",
+      "Ö": "O", "ö": "o",
+      "Ü": "U", "ü": "u"
+    };
+
+    return text.split('').map(char => replacements[char] || char).join('');
+  }
 
   // Функция для получения значения из строки с "Тур. Название" (tr main)
   function getTurMainValue() {
@@ -642,19 +667,37 @@ function autoFillNames() {
   // Получим значение из строки с "Тур. Название"
   const turMainValue = getTurMainValue();
   if (turMainValue) {
-    // Вставим значение в новые поля
+    // Вставим значение в поля с турецким языком без изменений
     setNewValue('tr', 'short', turMainValue); // Тур. Короткие (tr short)
-    setNewValue('en', 'main', turMainValue); // Анг. Название (en main)
-    setNewValue('en', 'short', turMainValue); // Анг. Короткие (en short)
+
+    // Заменим символы в значении для английского языка
+    const replacedValue = replaceTurkishChars(turMainValue);
+
+    // Вставим значение в поля с английским языком
+    setNewValue('en', 'main', replacedValue); // Анг. Название (en main)
+    setNewValue('en', 'short', replacedValue); // Анг. Короткие (en short)
   }
 }
-
 
 async function autoFillNamesWithTranslation() {
   const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
   const response = await fetch(chrome.runtime.getURL('config.json'));
   const config = await response.json();
   const API_KEY = config.googleCloudApiKey;
+
+  // Функция для замены символов
+  function replaceTurkishChars(text) {
+    const replacements = {
+      "Ş": "S", "ş": "s",
+      "Ç": "C", "ç": "c",
+      "Ğ": "G", "ğ": "g",
+      "İ": "I", "ı": "i",
+      "Ö": "O", "ö": "o",
+      "Ü": "U", "ü": "u"
+    };
+
+    return text.split('').map(char => replacements[char] || char).join('');
+  }
 
   // Функция для получения значения из строки с "Тур. Название" (tr main)
   function getTurMainValue() {
@@ -751,20 +794,162 @@ async function autoFillNamesWithTranslation() {
   // Получим значение из строки с "Тур. Название"
   const turMainValue = getTurMainValue();
   if (turMainValue) {
-    // Переведем значение и вставим его в новые поля
-    const turShortValue = turMainValue; // Тур. Короткие (tr short) остаются такими же
+    // Переведем значение
     const enMainValue = await translateText(turMainValue, 'en'); // Анг. Название (en main)
     const enShortValue = await translateText(turMainValue, 'en'); // Анг. Короткие (en short) можно также перевести
 
-    setNewValue('tr', 'short', turShortValue);
-    setNewValue('en', 'main', enMainValue);
-    setNewValue('en', 'short', enShortValue);
+    // Вставим значение в поля с турецким языком без изменений
+    setNewValue('tr', 'short', turMainValue); // Тур. Короткие (tr short)
+
+    // Заменим символы в переведенном значении для английского языка
+    const replacedEnMainValue = replaceTurkishChars(enMainValue);
+    const replacedEnShortValue = replaceTurkishChars(enShortValue);
+
+    // Вставим значение в поля с английским языком
+    setNewValue('en', 'main', replacedEnMainValue); // Анг. Название (en main)
+    setNewValue('en', 'short', replacedEnShortValue); // Анг. Короткие (en short)
   }
 }
 
 
-
 function manualFillNames() {
-  console.log("Ручное заполнение названий по выделенному слову");
+  const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
+
+  // Функция для замены символов
+  function replaceTurkishChars(text) {
+    const replacements = {
+      "Ş": "S", "ş": "s",
+      "Ç": "C", "ç": "c",
+      "Ğ": "G", "ğ": "g",
+      "İ": "I", "ı": "i",
+      "Ö": "O", "ö": "o",
+      "Ü": "U", "ü": "u"
+    };
+
+    return text.split('').map(char => replacements[char] || char).join('');
+  }
+
+  // Функция для установки значения в новое поле
+  function setNewValue(lang, type, value) {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+    const targetInput = inputs.find(input => {
+      let langField = null;
+      let typeField = null;
+      let parent = input.parentElement;
+      while (parent) {
+        langField = parent.querySelector('.select__control[name="lang"]');
+        typeField = parent.querySelector('.select__control[name="type"]');
+        if (langField && typeField) break;
+        parent = parent.parentElement;
+      }
+      if (!parent) {
+        console.log('Parent with lang and type fields not found for input:', input);
+        return false;
+      }
+      return langField && langField.value === lang && typeField && typeField.value === type;
+    });
+
+    if (targetInput) {
+      console.log(`Setting value "${value}" to input with lang "${lang}" and type "${type}"`);
+      targetInput.value = value;
+      targetInput.dispatchEvent(new Event('input'));
+      console.log(`Value set to "${value}"`);
+    } else {
+      console.log(`No input found with lang "${lang}" and type "${type}"`);
+    }
+  }
+
+  // Получаем выделенный текст
+  const selectedText = window.getSelection().toString();
+  if (!selectedText) {
+    console.log('No text selected');
+    return;
+  }
+
+  // Вставим значение в поля с турецким языком без изменений
+  setNewValue('tr', 'main', selectedText); // Тур. Название (tr main)
+  setNewValue('tr', 'short', selectedText); // Тур. Короткие (tr short)
+  
+  // Заменим символы в выделенном тексте для английского языка
+  const replacedValue = replaceTurkishChars(selectedText);
+
+  // Вставим значение в поля с английским языком
+  setNewValue('en', 'main', replacedValue); // Анг. Название (en main)
+  setNewValue('en', 'short', replacedValue); // Анг. Короткие (en short)
 }
 
+function manualFillShortNames() {
+  const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
+
+  // Функция для замены символов
+  function replaceTurkishChars(text) {
+    const replacements = {
+      "Ş": "S", "ş": "s",
+      "Ç": "C", "ç": "c",
+      "Ğ": "G", "ğ": "g",
+      "İ": "I", "ı": "i",
+      "Ö": "O", "ö": "o",
+      "Ü": "U", "ü": "u"
+    };
+
+    return text.split('').map(char => replacements[char] || char).join('');
+  }
+
+  // Функция для установки значения в новое поле
+  function setNewValue(lang, type, value) {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+    const targetInput = inputs.find(input => {
+      let langField = null;
+      let typeField = null;
+      let parent = input.parentElement;
+      while (parent) {
+        langField = parent.querySelector('.select__control[name="lang"]');
+        typeField = parent.querySelector('.select__control[name="type"]');
+        if (langField && typeField) break;
+        parent = parent.parentElement;
+      }
+      if (!parent) {
+        console.log('Parent with lang and type fields not found for input:', input);
+        return false;
+      }
+      return langField && langField.value === lang && typeField && typeField.value === type;
+    });
+
+    if (targetInput) {
+      console.log(`Setting value "${value}" to input with lang "${lang}" and type "${type}"`);
+      targetInput.value = value;
+      targetInput.dispatchEvent(new Event('input'));
+      console.log(`Value set to "${value}"`);
+    } else {
+      console.log(`No input found with lang "${lang}" and type "${type}"`);
+    }
+  }
+
+  // Получаем выделенный текст
+  const selectedText = window.getSelection().toString();
+  if (!selectedText) {
+    console.log('No text selected');
+    return;
+  }
+
+  // Вставим значение в поля с турецким языком без изменений
+  setNewValue('tr', 'short', selectedText); // Тур. Короткие (tr short)
+  
+  // Заменим символы в выделенном тексте для английского языка
+  const replacedValue = replaceTurkishChars(selectedText);
+
+  // Вставим значение в поля с английским языком
+  setNewValue('en', 'short', replacedValue); // Анг. Короткие (en short)
+}
