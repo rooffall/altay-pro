@@ -8,30 +8,65 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 
   chrome.contextMenus.create({
-    id: "autoCard",
-    title: "Редактирование карточки",
-    contexts: ["all"]
-  });
-
-  chrome.contextMenus.create({
     id: "coordinates",
     title: "Работа с координатами",
     contexts: ["page"]
   });
 
+  chrome.contextMenus.create({
+    id: "autoCard",
+    title: "Редактирование карточки",
+    contexts: ["all"]
+  });
+
+
   //////////////////////// ПОДМЕНЮ ///////////////////////
 
 
   //////////////////////
-  ////////////////////// autoCard menu
+  ////////////////////// statusPublication menu
 
   chrome.contextMenus.create({
-    id: "addNameRow",
-    title: "Создание строчек для названий",
+    id: "changePublicationStatus",
+    title: "Автостатус",
     parentId: "autoCard",
     contexts: ["page"]
   });
 
+  chrome.contextMenus.create({
+      id: "publish",
+      title: "Публиковать",
+      parentId: "changePublicationStatus",
+      contexts: ["all"]
+  });
+
+  chrome.contextMenus.create({
+      id: "duplicate",
+      title: "Дубль",
+      parentId: "changePublicationStatus",
+      contexts: ["all"]
+  });
+
+  chrome.contextMenus.create({
+      id: "closed",
+      title: "Фирма закрылась",
+      parentId: "changePublicationStatus",
+      contexts: ["all"]
+  });
+
+  chrome.contextMenus.create({
+      id: "unchecked",
+      title: "Непроверенные данные",
+      parentId: "changePublicationStatus",
+      contexts: ["all"]
+  });
+
+  chrome.contextMenus.create({
+      id: "unknown",
+      title: "Распубликовать",
+      parentId: "changePublicationStatus",
+      contexts: ["all"]
+  });
 
   ////////////////////// autoFill name menu
 
@@ -71,6 +106,17 @@ chrome.runtime.onInstalled.addListener(() => {
     parentId: "autoFillRowNames",
     contexts: ["selection"]
   });
+
+
+  ////////////////////// autoCard menu
+
+  chrome.contextMenus.create({
+    id: "addNameRow",
+    title: "Создание строчек для названий",
+    parentId: "autoCard",
+    contexts: ["page"]
+  });
+
 
 
   //////////////////////
@@ -196,6 +242,36 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       target: { tabId: tab.id },
       function: manualFillShortNames
     });
+  } else if (info.menuItemId === 'publish') {
+      chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function: changePublicationStatus,
+          args: ['publish']
+      });
+  } else if (info.menuItemId === 'duplicate') {
+      chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function: changePublicationStatus,
+          args: ['duplicate']
+      });
+  } else if (info.menuItemId === 'closed') {
+      chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function: changePublicationStatus,
+          args: ['closed']
+      });
+  } else if (info.menuItemId === 'unchecked') {
+      chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function: changePublicationStatus,
+          args: ['unchecked']
+      });
+  } else if (info.menuItemId === 'unknown') {
+      chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function: changePublicationStatus,
+          args: ['unknown']
+      });
   }
 });
 
@@ -350,8 +426,6 @@ function transformSelectionToTitleCase() {
   }
 }
 
- 
-
 
 function copyCoordinates() {
   const bodyText = document.body.innerText;
@@ -373,7 +447,6 @@ function copyCoordinates() {
     console.error('Не удалось скопировать координаты: ', err);
   }
 }
-
 
 function openInGoogleMaps() {
   const bodyText = document.body.innerText;
@@ -406,6 +479,7 @@ function openInYandexMaps() {
     alert('Координаты не найдены!');
   }
 }
+
 
 function addNameRow() {
   const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
@@ -811,7 +885,6 @@ async function autoFillNamesWithTranslation() {
   }
 }
 
-
 function manualFillNames() {
   const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
 
@@ -952,4 +1025,131 @@ function manualFillShortNames() {
 
   // Вставим значение в поля с английским языком
   setNewValue('en', 'short', replacedValue); // Анг. Короткие (en short)
+}
+
+
+// Функция для смены статуса публикации и добавления комментария
+function changePublicationStatus(status) {
+    try {
+        console.log("Начало выполнения функции changePublicationStatus");
+        
+        const statusElement = document.querySelector('.select.select_theme_islands.select_size_s.select_mode_radio.card-section__status.i-bem');
+        if (!statusElement) throw new Error("Status element not found");
+        console.log("Status element найден");
+
+        const inputElement = statusElement.querySelector('input.select__control');
+        if (!inputElement) throw new Error("Input element not found");
+        console.log("Input element найден");
+        
+        inputElement.value = status;
+
+        // Обновление текста кнопки
+        const buttonElement = statusElement.querySelector('.button__text');
+        if (buttonElement) {
+            console.log("Button element найден");
+            switch(status) {
+                case 'publish':
+                    buttonElement.textContent = 'публиковать';
+                    break;
+                case 'duplicate':
+                    buttonElement.textContent = 'дубль';
+                    break;
+                case 'closed':
+                    buttonElement.textContent = 'фирма закрылась';
+                    break;
+                case 'unchecked':
+                    buttonElement.textContent = 'непроверенные данные';
+                    break;
+                case 'unknown':
+                    buttonElement.textContent = 'распубликовать';
+                    break;
+            }
+        } else {
+            throw new Error("Button element not found");
+        }
+
+        // Изменение класса в зависимости от статуса
+        const editRelationElement = document.querySelector('.card-section__edit-relation.i-bem.card-section__edit-relation_js_inited');
+        if (editRelationElement) {
+            console.log("Edit relation element найден");
+            if (status === 'duplicate') {
+                editRelationElement.classList.add('card-section__edit-relation_visible');
+            } else {
+                editRelationElement.classList.remove('card-section__edit-relation_visible');
+            }
+        } else {
+            console.warn("Edit relation element not found. Skipping this step.");
+        }
+
+        // Нажатие на кнопку, если форма не в режиме редактирования
+        const formElement = document.querySelector('.card-section_view_publication.card-section_write.company-info__section');
+        if (formElement) {
+            console.log("Form element найден");
+            if (!formElement.classList.contains('card-section_edit')) {
+                const editButton = formElement.querySelector('.company-info__edit-link.card-section__edit-link.link__control');
+                if (editButton) {
+                    console.log("Edit button найден, нажимаем кнопку");
+                    editButton.click();
+                } else {
+                    console.error("Edit button not found внутри formElement");
+                }
+            } else {
+                console.log("Form is already in edit mode");
+            }
+        } else {
+            console.error("Form element not found");
+        }
+
+        // Проверка состояния кнопки комментариев и ввод текста
+        const commentFormElement = document.querySelector('.card-section_view_comments.card-section_write.company-info__section');
+        if (commentFormElement) {
+            console.log("Comment form element найден");
+            const commentEditWrapElement = commentFormElement.querySelector('.card-section__edit-wrap');
+            if (commentEditWrapElement) {
+                console.log("Comment edit wrap element найден");
+                if (!commentEditWrapElement.classList.contains('card-section__edit-wrap_visible')) {
+                    const commentEditButton = commentFormElement.querySelector('.company-info__edit-link.card-section__edit-link.link__control');
+                    if (commentEditButton) {
+                        console.log("Comment edit button найден, нажимаем кнопку");
+                        commentEditButton.click();
+                    } else {
+                        throw new Error("Comment edit button not found");
+                    }
+                } else {
+                    console.log("Comment edit wrap is already visible");
+                }
+            } else {
+                throw new Error("Comment edit wrap element not found");
+            }
+
+            // Ввод текста в комментарий
+            const commentTextarea = commentFormElement.querySelector('.textarea__control');
+            if (commentTextarea) {
+                console.log("Comment textarea найден");
+                switch(status) {
+                    case 'publish':
+                        commentTextarea.value = 'Платина Турция. \nКоррекция названий и метки. \nУдалось подтвердить. Звездю!';
+                        break;
+                    case 'duplicate':
+                        commentTextarea.value = 'Платина Турция. \nКарточка приклеена дублем и изменена под кластер.';
+                        break;
+                    case 'closed':
+                        commentTextarea.value = 'Платина Турция. \nКоррекция названий и метки. \nОрганизация закрыта. ФЗ.';
+                        break;
+                    case 'unchecked':
+                        commentTextarea.value = 'Платина Турция. \nКоррекция названий и метки. \nПодтвердить не удалось. НД.';
+                        break;
+                    case 'unknown':
+                        commentTextarea.value = 'Платина Турция. \nРаспубликовываю.';
+                        break;
+                }
+            } else {
+                throw new Error("Comment textarea not found");
+            }
+        } else {
+            console.error("Comment form element not found");
+        }
+    } catch (error) {
+        console.error(error.message);
+    }
 }
