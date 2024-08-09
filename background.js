@@ -20,6 +20,21 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 
 
+  chrome.contextMenus.create({
+    id:"saveAndLogNameValue",
+    title: "Копирование карточки",
+    parentId: "autoCard",
+    contexts: ["page"]
+  })
+
+  chrome.contextMenus.create({
+    id:"editCard",
+    title: "Вставка карточки",
+    parentId: "autoCard",
+    contexts: ["page"]
+  })
+
+
   //////////////////////// ПОДМЕНЮ ///////////////////////
 
 
@@ -242,36 +257,46 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       target: { tabId: tab.id },
       function: manualFillShortNames
     });
+  } else if (info.menuItemId === 'saveAndLogNameValue') {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: saveAndLogNameValue,
+    });
+  } else if (info.menuItemId === 'editCard') {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: editCard,
+    });
   } else if (info.menuItemId === 'publish') {
-      chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: changePublicationStatus,
-          args: ['publish']
-      });
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: changePublicationStatus,
+      args: ['publish']
+    });
   } else if (info.menuItemId === 'duplicate') {
-      chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: changePublicationStatus,
-          args: ['duplicate']
-      });
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: changePublicationStatus,
+      args: ['duplicate']
+    });
   } else if (info.menuItemId === 'closed') {
-      chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: changePublicationStatus,
-          args: ['closed']
-      });
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: changePublicationStatus,
+      args: ['closed']
+    });
   } else if (info.menuItemId === 'unchecked') {
-      chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: changePublicationStatus,
-          args: ['unchecked']
-      });
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: changePublicationStatus,
+      args: ['unchecked']
+    });
   } else if (info.menuItemId === 'unknown') {
-      chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: changePublicationStatus,
-          args: ['unknown']
-      });
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: changePublicationStatus,
+      args: ['unknown']
+    });
   }
 });
 
@@ -1151,5 +1176,176 @@ function changePublicationStatus(status) {
         }
     } catch (error) {
         console.error(error.message);
+    }
+}
+
+
+// Функция для сохранения и вывода значения Name, Address, Rubric, Permalink, Coordinates
+function saveAndLogNameValue() {
+    let permalink = '';
+    let nameValue = '';  
+    let address = ''; 
+    let latitude = '';
+    let longitude = '';
+    let rubricName = ''; 
+    let rubricId = '';
+
+    // Ищем и сохраняем значение пермалинка
+    const permalinkElement = document.querySelector('.card-info__item a.link');
+    if (permalinkElement) {
+        permalink = permalinkElement.textContent.trim();
+        console.log('Пермалинк:', permalink);
+    } else {
+        console.log('Пермалинк не найден');
+        alert('Пермалинк не найден!');
+    }
+
+    // Находим все строки <tr>
+    const rows = document.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+        const mainButton = row.querySelector('.select__control[name="type"][value="main"]');
+        if (mainButton) {
+            const langElement = row.querySelector('.select__control[name="lang"][value="tr"]');
+            if (langElement) {
+                const nameInput = row.querySelector('.input__control[name="name"]');
+                if (nameInput) {
+                    nameValue = nameInput.value;
+                    console.log('Название:', nameValue);
+                }
+            }
+        }
+    });
+
+    const addressRow = document.querySelector('.table__row.card-section__row.card-section__row_address.card-section__row_active-address.i-bem');
+    if (addressRow) {
+        const addressInput = addressRow.querySelector('input[name="main-address-input"]');
+        if (addressInput) {
+            address = addressInput.value;
+            console.log('Адрес:', address);
+        } else {
+            console.log('Элемент адреса не найден или значение пустое');
+            alert('Адрес не найден!');
+        }
+    } else {
+        console.log('Строка с адресом не найдена');
+        alert('Название не найдено!');
+    }
+
+
+    const latitudeElement = [...document.querySelectorAll('.card-section__position-item')].find(el => el.textContent.includes('Широта:'));
+    if (latitudeElement) {
+        latitude = latitudeElement.textContent.replace('Широта:', '').trim();
+        console.log('Широта:', latitude);
+    } else {
+        console.log('Широта не найдена');
+        alert('Широта не найдена!');
+    }
+
+    // Ищем и сохраняем координаты долготы
+    const longitudeElement = [...document.querySelectorAll('.card-section__position-item')].find(el => el.textContent.includes('Долгота:'));
+    if (longitudeElement) {
+        longitude = longitudeElement.textContent.replace('Долгота:', '').trim();
+        console.log('Долгота:', longitude);
+    } else {
+        console.log('Долгота не найдена');
+        alert('Долгота не найдена!');
+    }
+
+    const rubricSection = document.querySelector('.card-section__section');
+    if (rubricSection) {
+        const rubricNameElement = rubricSection.querySelector('.card-section__entity-title.card-section__entity-title_is-main');
+        if (rubricNameElement) {
+            rubricName = rubricNameElement.textContent.trim();
+        }
+
+        const rubricIdElement = rubricSection.querySelector('a.link[href^="/rubrics/"]');
+        if (rubricIdElement) {
+            rubricId = rubricIdElement.textContent.trim();
+        }
+
+        console.log('Рубрика: ' + rubricName +' (' + rubricId + ')');
+    } else {
+        console.log('Рубрика не найдена');
+        alert('Рубрика не найдена!');
+    }
+
+    const cardData = {
+        permalink: permalink,
+        name: nameValue,
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
+        rubricName: rubricName,
+        rubricId: rubricId
+    };
+
+    // Сохраняем данные в localStorage (как временное хранилище, если нет сервера)
+    localStorage.setItem('cardData', JSON.stringify(cardData));
+
+    console.log("Данные сохранены в JSON-файл.");
+}
+
+// Функция для редактирования карточки
+function editCard() {
+    // Загружаем данные из JSON-файла
+    const cardData = JSON.parse(localStorage.getItem('cardData'));
+
+    if (cardData) {
+        const { name, address, rubricName, rubricId } = cardData;
+
+        const nameSection = document.querySelector('.card-section_view_names.card-section_write.company-info__section');
+
+        if (nameSection) {
+            const editButton = nameSection.querySelector('.link.company-info__edit-link');
+            if (editButton) {
+                editButton.click();
+                console.log('Кнопка редактирования нажата');
+            } else {
+                console.error('Кнопка редактирования не найдена');
+                return;
+            }
+
+            const rowsWithRemoveButtons = nameSection.querySelectorAll('tr');
+            rowsWithRemoveButtons.forEach(row => {
+                const removeButton = row.querySelector('.card-section__icon-remove.card-section__remove .link');
+                if (removeButton && removeButton.offsetParent !== null) {
+                    removeButton.click();
+                    console.log('Удалена одна запись');
+                }
+            });
+
+            const nameButton = nameSection.querySelector('.button.button_size_s.button_theme_islands.select__button.button__control');
+            if (nameButton && nameButton.textContent.trim() === "Рус.") {
+                const spanElement = nameButton.querySelector('span');
+                if (spanElement) {
+                    spanElement.textContent = 'Тур.';
+                    console.log('Заменено "Рус." на "Тур."');
+                } else {
+                    console.log('Не удалось найти элемент <span> внутри кнопки.');
+                }
+            } else {
+                console.log('Элемент с "Рус." не найден или текст не соответствует');
+            }
+
+            const nameInput = nameSection.querySelector('.input__control[name="name"]');
+            if (nameInput) {
+                nameInput.value = name;
+                console.log(`Название "${name}" вставлено в поле ввода.`);
+            } else {
+                console.error('Поле ввода для названия не найдено.');
+            }
+
+            const langInput = nameSection.querySelector('.select__control[name="lang"][value="ru"]');
+            if (langInput) {
+                langInput.value = 'tr';
+                console.log('Заменено "ru" на "tr"');
+            }
+
+        } else {
+            console.error('Секция с названием карточки не найдена');
+        }
+    } else {
+        console.error('Не удалось загрузить данные из JSON-файла.');
     }
 }
