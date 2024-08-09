@@ -1280,22 +1280,24 @@ function saveAndLogNameValue() {
         rubricId: rubricId
     };
 
-    // Сохраняем данные в localStorage (как временное хранилище, если нет сервера)
+    // Сохраняем данные в localStorage (как временное хранилище)
     localStorage.setItem('cardData', JSON.stringify(cardData));
 
     console.log("Данные сохранены в JSON-файл.");
 }
 
-// Функция для редактирования карточки
-function editCard() {
-    // Загружаем данные из JSON-файла
-    const cardData = JSON.parse(localStorage.getItem('cardData'));
 
-    if (cardData) {
-        const { name, address, rubricName, rubricId } = cardData;
+function editCard() {
+    try {
+        const cardData = JSON.parse(localStorage.getItem('cardData'));
+
+        if (!cardData) {
+            throw new Error("Данные из JSON не найдены");
+        }
+
+        const { name, address, rubricName, rubricId, permalink, latitude, longitude } = cardData;
 
         const nameSection = document.querySelector('.card-section_view_names.card-section_write.company-info__section');
-
         if (nameSection) {
             const editButton = nameSection.querySelector('.link.company-info__edit-link');
             if (editButton) {
@@ -1341,11 +1343,219 @@ function editCard() {
                 langInput.value = 'tr';
                 console.log('Заменено "ru" на "tr"');
             }
-
         } else {
             console.error('Секция с названием карточки не найдена');
         }
-    } else {
-        console.error('Не удалось загрузить данные из JSON-файла.');
+
+        const status = 'duplicate'; 
+        const statusElement = document.querySelector('.select.select_theme_islands.select_size_s.select_mode_radio.card-section__status.i-bem');
+        if (!statusElement) throw new Error("Status element not found");
+        console.log("Status element найден");
+
+        const inputElement = statusElement.querySelector('input.select__control');
+        if (!inputElement) throw new Error("Input element not found");
+        console.log("Input element найден");
+        
+        inputElement.value = status;
+
+        const buttonElement = statusElement.querySelector('.button__text');
+        if (buttonElement) {
+            console.log("Button element найден");
+            switch(status) {
+                case 'duplicate':
+                    buttonElement.textContent = 'дубль';
+                    break;
+            }
+        } else {
+            throw new Error("Button element not found");
+        }
+
+        const editRelationElements = document.querySelectorAll('.card-section__edit-relation');
+        let editRelationElement = null;
+
+        editRelationElements.forEach((element) => {
+            const title = element.querySelector('.card-section__field-title');
+            if (title && title.textContent.includes('Пермалинк')) {
+                editRelationElement = element;
+            }
+        });
+
+        if (editRelationElement) {
+            editRelationElement.classList.add('card-section__edit-relation_visible');
+            console.log("Класс 'card-section__edit-relation_visible' добавлен к блоку 'Пермалинк'");
+
+            const addFormElement = editRelationElement.querySelector('.card-section__add-form');
+            if (addFormElement) {
+                console.log("Форма для добавления пермалинков найдена");
+
+                const permalinkInput = addFormElement.querySelector('.input__control');
+                if (permalinkInput) {
+                    permalinkInput.value = permalink;
+                    console.log(`Permalink "${permalink}" вставлен в поле ввода.`);
+                } else {
+                    console.error('Поле ввода для permalink не найдено');
+                }
+            } else {
+                console.error("Форма для добавления пермалинков не найдена.");
+            }
+        } else {
+            console.error("Не удалось найти блок с 'Пермалинк'");
+        }
+
+        const formElement = document.querySelector('.card-section_view_publication.card-section_write.company-info__section');
+        if (formElement) {
+            console.log("Form element найден");
+            if (!formElement.classList.contains('card-section_edit')) {
+                const editButton = formElement.querySelector('.company-info__edit-link.card-section__edit-link.link__control');
+                if (editButton) {
+                    console.log("Edit button найден, нажимаем кнопку");
+                    editButton.click();
+                } else {
+                    console.error("Edit button not found внутри formElement");
+                }
+            } else {
+                console.log("Form is already in edit mode");
+            }
+        } else {
+            console.error("Form element not found");
+        }
+
+        const commentFormElement = document.querySelector('.card-section_view_comments.card-section_write.company-info__section');
+        if (commentFormElement) {
+            console.log("Comment form element найден");
+            const commentEditWrapElement = commentFormElement.querySelector('.card-section__edit-wrap');
+            if (commentEditWrapElement) {
+                console.log("Comment edit wrap element найден");
+                if (!commentEditWrapElement.classList.contains('card-section__edit-wrap_visible')) {
+                    const commentEditButton = commentFormElement.querySelector('.company-info__edit-link.card-section__edit-link.link__control');
+                    if (commentEditButton) {
+                        console.log("Comment edit button найден, нажимаем кнопку");
+                        commentEditButton.click();
+                    } else {
+                        throw new Error("Comment edit button not found");
+                    }
+                } else {
+                    console.log("Comment edit wrap is already visible");
+                }
+            } else {
+                throw new Error("Comment edit wrap element not found");
+            }
+
+            const commentTextarea = commentFormElement.querySelector('.textarea__control');
+            if (commentTextarea) {
+                console.log("Comment textarea найден");
+                switch(status) {
+                    case 'duplicate':
+                        commentTextarea.value = 'Платина Турция. \nКарточка приклеена дублем и изменена под кластер.';
+                        break;
+                }
+            } else {
+                throw new Error("Comment textarea not found");
+            }
+        } else {
+            console.error("Comment form element not found");
+        }
+
+        // Нажимаем кнопку "Добавить" для пермалинка
+        setTimeout(() => {
+            const permalinkAddButton = formElement.querySelector('.button.card-section__permalink-add-button');
+            if (permalinkAddButton) {
+                permalinkAddButton.focus();
+
+                const keyDownEvent = new KeyboardEvent('keydown', {
+                    key: ' ',
+                    keyCode: 32,
+                    bubbles: true
+                });
+                permalinkAddButton.dispatchEvent(keyDownEvent);
+
+                const keyUpEvent = new KeyboardEvent('keyup', {
+                    key: ' ',
+                    keyCode: 32,
+                    bubbles: true
+                });
+                permalinkAddButton.dispatchEvent(keyUpEvent);
+
+                console.log('Кнопка "Добавить" для пермалинка нажата с использованием эмуляции пробела.');
+            } else {
+                console.error('Кнопка "Добавить" для пермалинка не найдена.');
+            }
+        }, 300);
+        
+        const addressSection = document.querySelector('.card-section_view_address.card-section_write.company-info__section');
+        if (addressSection) {
+            const editButton = addressSection.querySelector('.link.company-info__edit-link');
+            if (editButton) {
+                editButton.click();
+                console.log('Кнопка редактирования адреса нажата');
+            } else {
+                console.error('Кнопка редактирования адреса не найдена');
+                return;
+            }
+
+            const addressRow = addressSection.querySelector('.table__row.card-section__row.card-section__row_address.card-section__row_active-address.i-bem');
+            if (addressRow) {
+                const addressInput = addressRow.querySelector('input[name="main-address-input"]');
+                if (addressInput) {
+                    addressInput.value = address; // Используем сохранённый адрес
+                    console.log(`Адрес заменён на: "${address}"`);
+                } else {
+                    console.error('Поле ввода для адреса не найдено.');
+                }
+
+                // Найти элемент и заменить его значение на "tr"
+                const langInput = addressRow.querySelector('.select__control[type="hidden"]');
+                if (langInput) {
+                    const previousValue = langInput.value;  // Сохраняем старое значение для лога
+                    langInput.value = 'tr';
+                    console.log(`Значение "${previousValue}" заменено на "tr".`);
+                } else {
+                    console.error('Элемент для замены языка не найден.');
+                }
+
+                // Замена "Рус." на "Тур."
+                const langButton = addressRow.querySelector('.button.select__button.button__control');
+                if (langButton) {
+                    const spanElement = langButton.querySelector('span'); // Найдем элемент внутри кнопки
+                    if (spanElement) {
+                        const previousValue = spanElement.textContent.trim(); // Сохраняем старое значение для лога
+                        spanElement.textContent = "Тур."; // Меняем текст внутри span
+                        console.log(`Значение "${previousValue}" заменено на "Тур."`);
+                    } else {
+                        console.error('Элемент <span> внутри кнопки не найден.');
+                    }
+                } else {
+                    console.error('Кнопка для замены текста не найдена.');
+                }
+
+                // Замена значения широты
+                const latitudeInput = addressRow.querySelector('input[name="manual-latitude"]');
+                if (latitudeInput) {
+                    const previousLatitude = latitudeInput.value;  // Сохраняем старое значение для лога
+                    latitudeInput.value = latitude;
+                    console.log(`Значение широты "${previousLatitude}" заменено на "${latitude}".`);
+                } else {
+                    console.error('Поле ввода для широты не найдено.');
+                }
+
+                // Замена значения долготы
+                const longitudeInput = addressRow.querySelector('input[name="manual-longitude"]');
+                if (longitudeInput) {
+                    const previousLongitude = longitudeInput.value;  // Сохраняем старое значение для лога
+                    longitudeInput.value = longitude;
+                    console.log(`Значение долготы "${previousLongitude}" заменено на "${longitude}".`);
+                } else {
+                    console.error('Поле ввода для долготы не найдено.');
+                }
+
+            } else {
+                console.error('Строка с адресом не найдена.');
+            }
+        } else {
+            console.error('Секция с адресом не найдена');
+        }
+
+    } catch (error) {
+        console.error(error.message);
     }
 }
