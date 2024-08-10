@@ -15,27 +15,21 @@ chrome.runtime.onInstalled.addListener(() => {
 
   chrome.contextMenus.create({
     id: "autoCard",
-    title: "Редактирование карточки",
+    title: "Редактирование с карточкой",
     contexts: ["all"]
   });
 
-
-  chrome.contextMenus.create({
-    id:"saveAndLogNameValue",
-    title: "Копирование карточки",
-    parentId: "autoCard",
-    contexts: ["page"]
-  })
-
-  chrome.contextMenus.create({
-    id:"editCard",
-    title: "Вставка карточки",
-    parentId: "autoCard",
-    contexts: ["page"]
-  })
-
-
   //////////////////////// ПОДМЕНЮ ///////////////////////
+
+// todo
+
+
+  chrome.contextMenus.create({
+    id: "removeUrls",
+    title: "Очистка урлов",
+    parentId: "autoCard",
+    contexts: ["page"]
+  });
 
 
   //////////////////////
@@ -83,12 +77,37 @@ chrome.runtime.onInstalled.addListener(() => {
       contexts: ["all"]
   });
 
+ //////////////////////
+ ////////////////////// autoDuplicate menu
+
+    chrome.contextMenus.create({
+    id: "autoDuplicate",
+    title: "Автодубль",
+    parentId: "autoCard",
+    contexts: ["page"]
+  });
+
+  chrome.contextMenus.create({
+    id:"saveAndLogNameValue",
+    title: "Копирование кластера",
+    parentId: "autoDuplicate",
+    contexts: ["page"]
+  })
+
+  chrome.contextMenus.create({
+    id:"editCard",
+    title: "Заполнение дубля",
+    parentId: "autoDuplicate",
+    contexts: ["page"]
+  })
+
+  //////////////////////
   ////////////////////// autoFill name menu
 
   // Создаем подменю
   chrome.contextMenus.create({
     id: "autoFillRowNames",
-    title: "Автоматическое заполнение названий",
+    title: "Автоназвание",
     parentId: "autoCard",
     contexts: ["all"]
   });
@@ -122,13 +141,10 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["selection"]
   });
 
-
-  ////////////////////// autoCard menu
-
   chrome.contextMenus.create({
     id: "addNameRow",
     title: "Создание строчек для названий",
-    parentId: "autoCard",
+    parentId: "autoFillRowNames",
     contexts: ["page"]
   });
 
@@ -246,7 +262,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       target: { tabId: tab.id },
       function: autoFillNamesWithTranslation
     });
-    //TODO
   } else if (info.menuItemId === "manualFillNames") {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
@@ -266,6 +281,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
       function: editCard,
+    });
+  } else if (info.menuItemId === "removeUrls") {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: removeUrls
     });
   } else if (info.menuItemId === 'publish') {
     chrome.scripting.executeScript({
@@ -297,7 +317,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       function: changePublicationStatus,
       args: ['unknown']
     });
-  }
+  } 
 });
 
 
@@ -1287,6 +1307,55 @@ function saveAndLogNameValue() {
 }
 
 
+function removeUrls() {
+  const urlsSection = document.querySelector('.card-section_view_urls.card-section_write.company-info__section');
+  if (urlsSection) {
+      const editButton = urlsSection.querySelector('.link.company-info__edit-link');
+      if (editButton) {
+          editButton.click();
+          console.log('Кнопка редактирования URL нажата');
+      } else {
+          console.error('Кнопка редактирования URL не найдена');
+          return;
+      }
+
+      // Проходим по всем строкам tbody
+      const rows = urlsSection.querySelectorAll('tbody.autoinsert.autoinsert_view_table-row.i-bem');
+      if (rows.length > 0) {
+          rows.forEach((row, index) => {
+              console.log(`Обрабатывается строка ${index + 1}`);
+              const selectElement = row.querySelector('input.select__control');
+              if (selectElement) {
+                  const value = selectElement.value;
+                  console.log(`Найдено value: ${value}`);
+                  if (['main', 'alternative', 'social'].includes(value)) {
+                      const removeButton = row.querySelector('.card-section__icon-remove.card-section__remove');
+                      if (removeButton) {
+                          removeButton.click();
+                          console.log(`Строка с value "${value}" удалена.`);
+                      } else {
+                          console.error(`Кнопка удаления не найдена для value "${value}".`);
+                      }
+                  } else {
+                      console.log(`Строка с value "${value}" пропущена.`);
+                  }
+              } else {
+                  console.error(`Поле value не найдено в строке ${index + 1}.`);
+              }
+          });
+      } else {
+          console.error('Строки с URL не найдены.');
+      }
+  } else {
+      console.error('Секция с URL не найдена.');
+  }
+
+  if (!cardData) {
+      throw new Error("Данные из JSON не найдены");
+    } 
+}
+
+
 function editCard() {
     try {
         const cardData = JSON.parse(localStorage.getItem('cardData'));
@@ -1299,13 +1368,17 @@ function editCard() {
 
         const nameSection = document.querySelector('.card-section_view_names.card-section_write.company-info__section');
         if (nameSection) {
-            const editButton = nameSection.querySelector('.link.company-info__edit-link');
-            if (editButton) {
-                editButton.click();
-                console.log('Кнопка редактирования нажата');
+            if (!nameSection.classList.contains('card-section_edit')) {
+                const editButton = nameSection.querySelector('.link.company-info__edit-link');
+                if (editButton) {
+                    editButton.click();
+                    console.log('Кнопка редактирования нажата');
+                } else {
+                    console.error('Кнопка редактирования не найдена');
+                    return;
+                }
             } else {
-                console.error('Кнопка редактирования не найдена');
-                return;
+                console.log("Секция с названием уже в режиме редактирования");
             }
 
             const rowsWithRemoveButtons = nameSection.querySelectorAll('tr');
@@ -1446,7 +1519,7 @@ function editCard() {
                 console.log("Comment textarea найден");
                 switch(status) {
                     case 'duplicate':
-                        commentTextarea.value = 'Платина Турция. \nКарточка приклеена дублем и изменена под кластер.';
+                        commentTextarea.value = 'Платина Турция. \nКарточка приклеена дублем и изменена под кластер '+ permalink + '.';
                         break;
                 }
             } else {
@@ -1484,13 +1557,17 @@ function editCard() {
         
         const addressSection = document.querySelector('.card-section_view_address.card-section_write.company-info__section');
         if (addressSection) {
-            const editButton = addressSection.querySelector('.link.company-info__edit-link');
-            if (editButton) {
-                editButton.click();
-                console.log('Кнопка редактирования адреса нажата');
+            if (!addressSection.classList.contains('card-section_edit')) {
+                const editButton = addressSection.querySelector('.link.company-info__edit-link');
+                if (editButton) {
+                    editButton.click();
+                    console.log('Кнопка редактирования адреса нажата');
+                } else {
+                    console.error('Кнопка редактирования адреса не найдена');
+                    return;
+                }
             } else {
-                console.error('Кнопка редактирования адреса не найдена');
-                return;
+                console.log("Секция с адресом уже в режиме редактирования");
             }
 
             const addressRow = addressSection.querySelector('.table__row.card-section__row.card-section__row_address.card-section__row_active-address.i-bem');
@@ -1528,24 +1605,30 @@ function editCard() {
                     console.error('Кнопка для замены текста не найдена.');
                 }
 
-                // Замена значения широты
-                const latitudeInput = addressRow.querySelector('input[name="manual-latitude"]');
-                if (latitudeInput) {
-                    const previousLatitude = latitudeInput.value;  // Сохраняем старое значение для лога
-                    latitudeInput.value = latitude;
-                    console.log(`Значение широты "${previousLatitude}" заменено на "${latitude}".`);
-                } else {
-                    console.error('Поле ввода для широты не найдено.');
-                }
+                // Замена значений широты и долготы в таблице координат
+                const coordinatesTable = addressSection.querySelector('.table.card-section__table.card-section__table_type_coordinates');
+                if (coordinatesTable) {
+                    // Замена значения широты
+                    const latitudeInput = coordinatesTable.querySelector('input[name="manual-latitude"]');
+                    if (latitudeInput) {
+                        const previousLatitude = latitudeInput.value;  // Сохраняем старое значение для лога
+                        latitudeInput.value = latitude;
+                        console.log(`Значение широты "${previousLatitude}" заменено на "${latitude}".`);
+                    } else {
+                        console.error('Поле ввода для широты не найдено.');
+                    }
 
-                // Замена значения долготы
-                const longitudeInput = addressRow.querySelector('input[name="manual-longitude"]');
-                if (longitudeInput) {
-                    const previousLongitude = longitudeInput.value;  // Сохраняем старое значение для лога
-                    longitudeInput.value = longitude;
-                    console.log(`Значение долготы "${previousLongitude}" заменено на "${longitude}".`);
+                    // Замена значения долготы
+                    const longitudeInput = coordinatesTable.querySelector('input[name="manual-longitude"]');
+                    if (longitudeInput) {
+                        const previousLongitude = longitudeInput.value;  // Сохраняем старое значение для лога
+                        longitudeInput.value = longitude;
+                        console.log(`Значение долготы "${previousLongitude}" заменено на "${longitude}".`);
+                    } else {
+                        console.error('Поле ввода для долготы не найдено.');
+                    }
                 } else {
-                    console.error('Поле ввода для долготы не найдено.');
+                    console.error('Таблица координат не найдена.');
                 }
 
             } else {
@@ -1553,6 +1636,165 @@ function editCard() {
             }
         } else {
             console.error('Секция с адресом не найдена');
+        }
+
+        // Работа с формой телефонов
+        const phonesSection = document.querySelector('.card-section_view_phones.card-section_write.company-info__section');
+        if (phonesSection) {
+            if (!phonesSection.classList.contains('card-section_edit')) {
+                const editButton = phonesSection.querySelector('.link.company-info__edit-link');
+                if (editButton) {
+                    editButton.click();
+                    console.log('Кнопка редактирования телефонов нажата');
+                } else {
+                    console.error('Кнопка редактирования телефонов не найдена');
+                    return;
+                }
+            } else {
+                console.log("Секция с телефонами уже в режиме редактирования");
+            }
+
+            // Найти и нажать все кнопки удаления
+            const removeButtons = phonesSection.querySelectorAll('.card-section__icon-remove.card-section__remove.i-bem');
+            if (removeButtons.length > 0) {
+                removeButtons.forEach((button) => {
+                    button.click();
+                    console.log('Кнопка удаления нажата');
+                });
+            } else {
+                console.error('Кнопки удаления не найдены.');
+            }
+        } else {
+            console.error('Секция с телефонами не найдена.');
+        }
+
+        // Работа с формой URL-адресов
+        const urlsSection = document.querySelector('.card-section_view_urls.card-section_write.company-info__section');
+        if (urlsSection) {
+            if (!urlsSection.classList.contains('card-section_edit')) {
+                const editButton = urlsSection.querySelector('.link.company-info__edit-link');
+                if (editButton) {
+                    editButton.click();
+                    console.log('Кнопка редактирования URL нажата');
+                } else {
+                    console.error('Кнопка редактирования URL не найдена');
+                    return;
+                }
+            } else {
+                console.log("Секция с URL уже в режиме редактирования");
+            }
+
+            // Проходим по всем строкам tbody
+            const rows = urlsSection.querySelectorAll('tbody.autoinsert.autoinsert_view_table-row.i-bem');
+            if (rows.length > 0) {
+                rows.forEach((row, index) => {
+                    console.log(`Обрабатывается строка ${index + 1}`);
+                    const selectElement = row.querySelector('input.select__control');
+                    if (selectElement) {
+                        const value = selectElement.value;
+                        console.log(`Найдено value: ${value}`);
+                        if (['main', 'alternative', 'social'].includes(value)) {
+                            const removeButton = row.querySelector('.card-section__icon-remove.card-section__remove');
+                            if (removeButton) {
+                                removeButton.click();
+                                console.log(`Строка с value "${value}" удалена.`);
+                            } else {
+                                console.error(`Кнопка удаления не найдена для value "${value}".`);
+                            }
+                        } else {
+                            console.log(`Строка с value "${value}" пропущена.`);
+                        }
+                    } else {
+                        console.error(`Поле value не найдено в строке ${index + 1}.`);
+                    }
+                });
+            } else {
+                console.error('Строки с URL не найдены.');
+            }
+        } else {
+            console.error('Секция с URL не найдена.');
+        }
+
+        // Работа с формой рабочих интервалов
+        const workIntervalsSection = document.querySelector('.card-section_view_work-intervals.card-section_write.company-info__section');
+        if (workIntervalsSection) {
+            if (!workIntervalsSection.classList.contains('card-section_edit')) {
+                const editButton = workIntervalsSection.querySelector('.link.company-info__edit-link');
+                if (editButton) {
+                    editButton.click();
+                    console.log('Кнопка редактирования рабочих интервалов нажата');
+                } else {
+                    console.error('Кнопка редактирования рабочих интервалов не найдена');
+                    return;
+                }
+            } else {
+                console.log("Секция с рабочими интервалами уже в режиме редактирования");
+            }
+
+            // Найти все поля input и очистить их значение
+            const inputs = workIntervalsSection.querySelectorAll('.input__control.i-bem.input__control_js_inited');
+            inputs.forEach((input, index) => {
+                input.value = ''; // Очистить поле
+                console.log(`Поле ввода ${index + 1} очищено.`);
+            });
+        } else {
+            console.error('Секция с рабочими интервалами не найдена.');
+        }
+
+        // Работа с формой рубрик
+        const rubricsSection = document.querySelector('.card-section_view_rubrics.card-section_write.company-info__section');
+        if (rubricsSection) {
+            if (!rubricsSection.classList.contains('card-section_edit')) {
+                const editButton = rubricsSection.querySelector('.link.company-info__edit-link');
+                if (editButton) {
+                    editButton.click();
+                    console.log('Кнопка редактирования рубрик нажата');
+                } else {
+                    throw new Error('Кнопка редактирования рубрик не найдена.');
+                }
+            } else {
+                console.log("Секция с рубриками уже в режиме редактирования");
+            }
+
+            // Удаление всех рубрик
+            const removeButtons = rubricsSection.querySelectorAll('.card-section__icon-remove.card-section__remove');
+            if (removeButtons.length > 0) {
+                removeButtons.forEach((button, index) => {
+                    button.click();
+                    console.log(`Кнопка удаления рубрики ${index + 1} нажата.`);
+                });
+            } else {
+                console.error('Кнопки удаления в рубриках не найдены.');
+            }
+
+            // Находим поле ввода внутри формы
+            const inputField = rubricsSection.querySelector('.input__control_js_inited.i-bem.input__control');
+            if (inputField) {
+                inputField.focus(); // Фокусируемся на поле ввода
+                inputField.value = rubricId; // Вводим значение rubricId
+                inputField.dispatchEvent(new Event('input', { bubbles: true })); // Эмулируем событие input
+                console.log(`Введено значение: ${rubricId}`);
+
+                // Теперь добавляем задержку и пытаемся найти всплывающее окно
+                setTimeout(() => {
+                    // Ищем элемент с текстом, который содержит rubricId
+                    const option = Array.from(document.querySelectorAll('*')).find(el => 
+                        el.textContent.includes(`${rubricId}:`) && el.classList.contains('menu__item')
+                    );
+
+                    if (option) {
+                        option.click(); // Кликаем по найденному элементу
+                        console.log(`Выбран элемент: ${rubricId}`);
+                    } else {
+                        console.error(`Элемент с текстом "${rubricId}" не найден.`);
+                    }
+                }, 500); // Задержка в 500 мс для появления элемента
+
+            } else {
+                console.error('Поле ввода для rubricId внутри формы не найдено.');
+            }
+        } else {
+            throw new Error('Форма с рубриками не найдена.');
         }
 
     } catch (error) {
