@@ -13,11 +13,40 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["page"]
   });
 
+
+    chrome.contextMenus.create({
+    id: "autoDuplicate",
+    title: "Автодубль",
+    contexts: ["page"]
+  });
+
+  chrome.contextMenus.create({
+    id: "completeCard",
+    title: "Автозаполнение карточки",
+    contexts: ["page"]
+  });
+
   chrome.contextMenus.create({
     id: "autoCard",
-    title: "Редактирование с карточкой",
+    title: "Редактирование карточки",
     contexts: ["all"]
   });
+
+
+  chrome.contextMenus.create({
+    id: "completeNames",
+    title: "Автоназвание без перевода",
+    parentId: "completeCard",
+    contexts: ["page"]
+  });
+
+  chrome.contextMenus.create({
+    id: "completeNamesTranslate",
+    title: "Автоназвание с переводом",
+    parentId: "completeCard",
+    contexts: ["page"]
+  });
+
 
   //////////////////////// ПОДМЕНЮ ///////////////////////
 
@@ -79,13 +108,6 @@ chrome.runtime.onInstalled.addListener(() => {
 
  //////////////////////
  ////////////////////// autoDuplicate menu
-
-    chrome.contextMenus.create({
-    id: "autoDuplicate",
-    title: "Автодубль",
-    parentId: "autoCard",
-    contexts: ["page"]
-  });
 
   chrome.contextMenus.create({
     id:"saveAndLogNameValue",
@@ -271,6 +293,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
       function: manualFillShortNames
+    });
+  } else if (info.menuItemId === "completeNames") { 
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: completeNames
+    }); 
+  } else if (info.menuItemId === 'completeNamesTranslate') {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: completeNamesTranslate,
     });
   } else if (info.menuItemId === 'saveAndLogNameValue') {
     chrome.scripting.executeScript({
@@ -1801,3 +1833,538 @@ function editCard() {
         console.error(error.message);
     }
 }
+
+function completeNames() {
+ // const formSelector = '.card-section.card-section_view_names.card-section_write.company-info__section.island.island_theme_islands.form.i-bem.card-section_js_inited.company-info__section_js_inited.card-section_edit';
+
+  const formSelector = '.card-section_view_names.card-section_write.company-info__section';
+  const editButtonSelector = '.link.company-info__edit-link';
+
+  const form = document.querySelector(formSelector);
+  if (!form) {
+    console.log('Target form not found');
+    return;
+  }
+
+  const editButton = form.querySelector(editButtonSelector);
+  if (!editButton) {
+    console.log('Edit button not found');
+    return;
+  }
+
+  if (editButton.getAttribute('aria-expanded') !== 'true') {
+    console.log('Edit button not clicked yet, clicking now');
+    editButton.click();
+  } else {
+    console.log('Edit button already clicked');
+  }
+
+
+  // Функция для изменения текста "Рус." на целевой текст внутри указанной формы
+  function changeLastRusTextTo(targetText) {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const buttons = Array.from(form.querySelectorAll('.button__text'));
+    const rusButtons = buttons.filter(button => button.innerText.trim() === 'Рус.');
+    console.log(`Found ${rusButtons.length} buttons with text "Рус." inside the target form`);
+
+    if (rusButtons.length > 0) {
+      const lastRusButton = rusButtons[rusButtons.length - 1];
+      console.log(`Changing button text "${lastRusButton.innerText}" to "${targetText}"`);
+      lastRusButton.innerText = targetText;
+      console.log(`Last button text changed to "${targetText}"`);
+    } else {
+      console.log('No button with text "Рус." found to change');
+    }
+  }
+
+  // Функция для изменения значения языка "ru" на целевое значение внутри указанной формы
+  function changeLastRusFieldTo(langValue) {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const langFields = Array.from(form.querySelectorAll('.select__control[name="lang"]'));
+    const rusLangFields = langFields.filter(field => field.value === 'ru' && isVisible(field));
+    console.log(`Found ${rusLangFields.length} visible language fields with value "ru" inside the target form`);
+
+    if (rusLangFields.length > 0) {
+      const lastRusLangField = rusLangFields[rusLangFields.length - 1];
+      console.log(`Changing language field value "${lastRusLangField.value}" to "${langValue}"`);
+      lastRusLangField.value = langValue;
+      lastRusLangField.dispatchEvent(new Event('change'));
+      console.log(`Last language field changed to "${langValue}"`);
+    } else {
+      console.log('No visible "ru" language field found to change');
+    }
+  }
+
+  // Функция для изменения значения типа "main" на "short" внутри указанной формы
+  function changeLastTypeFieldToShort() {
+
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const typeFields = Array.from(form.querySelectorAll('.select__control[name="type"]'));
+    const mainTypeFields = typeFields.filter(field => field.value === 'main' && isVisible(field));
+    console.log(`Found ${mainTypeFields.length} visible type fields with value "main" inside the target form`);
+
+    if (mainTypeFields.length > 0) {
+      const lastMainTypeField = mainTypeFields[mainTypeFields.length - 1];
+      console.log(`Changing type field value "${lastMainTypeField.value}" to "short"`);
+      lastMainTypeField.value = 'short';
+      lastMainTypeField.dispatchEvent(new Event('change'));
+      console.log(`Last type field changed to "short"`);
+    } else {
+      console.log('No visible "main" type field found to change');
+    }
+  }
+
+  // Функция для изменения текста "Названия" на "Короткие" внутри указанной формы
+  function changeLastNameTextToShort() {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    const nameButtons = Array.from(form.querySelectorAll('.button__text'));
+    const nameFields = nameButtons.filter(button => button.innerText.trim() === 'Названия');
+    console.log(`Found ${nameFields.length} buttons with text "Названия" inside the target form`);
+
+    if (nameFields.length > 0) {
+      const lastNameField = nameFields[nameFields.length - 1];
+      console.log(`Changing name field text "${lastNameField.innerText}" to "Короткие"`);
+      lastNameField.innerText = 'Короткие';
+      console.log(`Last name field text changed to "Короткие"`);
+    } else {
+      console.log('No button with text "Названия" found to change');
+    }
+  }
+
+  // Проверка, виден ли элемент
+  function isVisible(element) {
+    return !(element.style.display === 'none' || element.style.visibility === 'hidden');
+  }
+
+  // Функция для добавления и изменения строк
+  function createRows() {
+    const form = document.querySelector(formSelector);
+    if (!form) {
+      console.log('Target form not found');
+      return;
+    }
+
+    // Шаг 1: Меняем последнюю строку "Рус." на "Анг.", "ru" на "en"
+    changeLastRusTextTo('Анг.');
+    changeLastRusFieldTo('en');
+
+    // Нажмем первый раз на плюсик
+    const addButton = form.querySelector('.card-section__icon-add.card-section__add');
+    if (addButton) {
+      console.log('First click on add button');
+      addButton.click();
+      setTimeout(() => {
+        // Шаг 2: Меняем "Рус." на "Тур.", "ru" на "tr" и "main" на "short"
+        changeLastRusTextTo('Тур.');
+        changeLastRusFieldTo('tr');
+        changeLastTypeFieldToShort();
+        changeLastNameTextToShort();
+
+        // Нажмем второй раз на плюсик
+        console.log('Second click on add button');
+        addButton.click();
+        setTimeout(() => {
+          // Шаг 3: Меняем "Рус." на "Анг." и "ru" на "en" и "main" на "short"
+          changeLastRusTextTo('Анг.');
+          changeLastRusFieldTo('en');
+          changeLastTypeFieldToShort();
+          changeLastNameTextToShort();
+
+          // После создания строк вызываем функцию автозаполнения
+          autoFillNames();
+        }, 850); // Wait for 0.8 seconds to allow the new field to be added
+      }, 850); // Wait for 0.8 seconds before second clickaddNameRowAndAutoFillNames
+    } else {
+      alert('Add button not found');
+    }
+  }
+
+  // Объединяем с функцией автозаполнения
+  function autoFillNames() {
+    // Функция для замены символов
+    function replaceTurkishChars(text) {
+      const replacements = {
+        "Ş": "S", "ş": "s",
+        "Ç": "C", "ç": "c",
+        "Ğ": "G", "ğ": "g",
+        "İ": "I", "ı": "i",
+        "Ö": "O", "ö": "o",
+        "Ü": "U", "ü": "u"
+      };
+
+      return text.split('').map(char => replacements[char] || char).join('');
+    }
+
+    // Функция для получения значения из строки с "Тур. Название" (tr main)
+    function getTurMainValue() {
+      const form = document.querySelector(formSelector);
+      if (!form) {
+        console.log('Target form not found');
+        return null;
+      }
+
+      const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+      const turMainInput = inputs.find(input => {
+        let langField = null;
+        let typeField = null;
+        let parent = input.parentElement;
+        while (parent) {
+          langField = parent.querySelector('.select__control[name="lang"]');
+          typeField = parent.querySelector('.select__control[name="type"]');
+          if (langField && typeField) break;
+          parent = parent.parentElement;
+        }
+        if (!parent) {
+          console.log('Parent with lang and type fields not found for input:', input);
+          return false;
+        }
+        return langField && langField.value === 'tr' && typeField && typeField.value === 'main';
+      });
+
+      if (turMainInput) {
+        console.log(`Found "Тур. Название" input: ${turMainInput.value}`);
+        return turMainInput.value;
+      } else {
+        console.log('No "Тур. Название" input found');
+        return null;
+      }
+    }
+
+    // Функция для установки значения в новое поле
+    function setNewValue(lang, type, value) {
+      const form = document.querySelector(formSelector);
+      if (!form) {
+        console.log('Target form not found');
+        return;
+      }
+
+      const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+      const targetInput = inputs.find(input => {
+        let langField = null;
+        let typeField = null;
+        let parent = input.parentElement;
+        while (parent) {
+          langField = parent.querySelector('.select__control[name="lang"]');
+          typeField = parent.querySelector('.select__control[name="type"]');
+          if (langField && typeField) break;
+          parent = parent.parentElement;
+        }
+        if (!parent) {
+          console.log('Parent with lang and type fields not found for input:', input);
+          return false;
+        }
+        return langField && langField.value === lang && typeField && typeField.value === type;
+      });
+
+      if (targetInput) {
+        console.log(`Setting value "${value}" to input with lang "${lang}" and type "${type}"`);
+        targetInput.value = value;
+        targetInput.dispatchEvent(new Event('input'));
+        console.log(`Value set to "${value}"`);
+      } else {
+        console.log(`No input found with lang "${lang}" and type "${type}"`);
+      }
+    }
+
+    // Получим значение из строки с "Тур. Название"
+    const turMainValue = getTurMainValue();
+    if (turMainValue) {
+      // Вставим значение в поля с турецким языком без изменений
+      setNewValue('tr', 'short', turMainValue); // Тур. Короткие (tr short)
+
+      // Заменим символы в значении для английского языка
+      const replacedValue = replaceTurkishChars(turMainValue);
+
+      // Вставим значение в поля с английским языком
+      setNewValue('en', 'main', replacedValue); // Анг. Название (en main)
+      setNewValue('en', 'short', replacedValue); // Анг. Короткие (en short)
+    }
+  }
+
+  // Сначала создадим строки
+  createRows();
+}
+
+// async function completeNamesTranslate() {
+//   const formSelector = '.card-section_view_names.card-section_write.company-info__section';
+
+//   // Функция для замены символов
+//   function replaceTurkishChars(text) {
+//     const replacements = {
+//       "Ş": "S", "ş": "s",
+//       "Ç": "C", "ç": "c",
+//       "Ğ": "G", "ğ": "g",
+//       "İ": "I", "ı": "i",
+//       "Ö": "O", "ö": "o",
+//       "Ü": "U", "ü": "u"
+//     };
+//     return text.split('').map(char => replacements[char] || char).join('');
+//   }
+
+//   // Функция для получения значения из строки с "Тур. Название" (tr main)
+//   function getTurMainValue() {
+//     const form = document.querySelector(formSelector);
+//     if (!form) {
+//       console.log('Target form not found');
+//       return null;
+//     }
+
+//     const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+//     const turMainInput = inputs.find(input => {
+//       let langField = null;
+//       let typeField = null;
+//       let parent = input.parentElement;
+//       while (parent) {
+//         langField = parent.querySelector('.select__control[name="lang"]');
+//         typeField = parent.querySelector('.select__control[name="type"]');
+//         if (langField && typeField) break;
+//         parent = parent.parentElement;
+//       }
+//       if (!parent) {
+//         console.log('Parent with lang and type fields not found for input:', input);
+//         return false;
+//       }
+//       return langField && langField.value === 'tr' && typeField && typeField.value === 'main';
+//     });
+
+//     if (turMainInput) {
+//       console.log(`Found "Тур. Название" input: ${turMainInput.value}`);
+//       return turMainInput.value;
+//     } else {
+//       console.log('No "Тур. Название" input found');
+//       return null;
+//     }
+//   }
+
+//   // Функция для установки значения в новое поле
+//   function setNewValue(lang, type, value) {
+//     const form = document.querySelector(formSelector);
+//     if (!form) {
+//       console.log('Target form not found');
+//       return;
+//     }
+
+//     const inputs = Array.from(form.querySelectorAll('.input__control[name="name"]'));
+//     const targetInput = inputs.find(input => {
+//       let langField = null;
+//       let typeField = null;
+//       let parent = input.parentElement;
+//       while (parent) {
+//         langField = parent.querySelector('.select__control[name="lang"]');
+//         typeField = parent.querySelector('.select__control[name="type"]');
+//         if (langField && typeField) break;
+//         parent = parent.parentElement;
+//       }
+//       if (!parent) {
+//         console.log('Parent with lang and type fields not found for input:', input);
+//         return false;
+//       }
+//       return langField && langField.value === lang && typeField && typeField.value === type;
+//     });
+
+//     if (targetInput) {
+//       console.log(`Setting value "${value}" to input with lang "${lang}" and type "${type}"`);
+//       targetInput.value = value;
+//       targetInput.dispatchEvent(new Event('input'));
+//       console.log(`Value set to "${value}"`);
+//     } else {
+//       console.log(`No input found with lang "${lang}" and type "${type}"`);
+//     }
+//   }
+
+//   // Функция для перевода текста с помощью Google Cloud Translation API
+//   async function translateText(text, targetLang) {
+//     const response = await fetch(chrome.runtime.getURL('config.json'));
+//     const config = await response.json();
+//     const API_KEY = config.googleCloudApiKey;
+
+//     const translateResponse = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${API_KEY}`, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json'
+//       },
+//       body: JSON.stringify({
+//         q: text,
+//         target: targetLang,
+//         format: 'text'
+//       })
+//     });
+
+//     const data = await translateResponse.json();
+//     return data.data.translations[0].translatedText;
+//   }
+
+//   // Функция для изменения текста "Рус." на целевой текст внутри указанной формы
+//   function changeLastRusTextTo(targetText) {
+//     const form = document.querySelector(formSelector);
+//     if (!form) {
+//       console.log('Target form not found');
+//       return;
+//     }
+
+//     const buttons = Array.from(form.querySelectorAll('.button__text'));
+//     const rusButtons = buttons.filter(button => button.innerText.trim() === 'Рус.');
+//     console.log(`Found ${rusButtons.length} buttons with text "Рус." inside the target form`);
+
+//     if (rusButtons.length > 0) {
+//       const lastRusButton = rusButtons[rusButtons.length - 1];
+//       console.log(`Changing button text "${lastRusButton.innerText}" to "${targetText}"`);
+//       lastRusButton.innerText = targetText;
+//       console.log(`Last button text changed to "${targetText}"`);
+//     } else {
+//       console.log('No button with text "Рус." found to change');
+//     }
+//   }
+
+//   // Функция для изменения значения языка "ru" на целевое значение внутри указанной формы
+//   function changeLastRusFieldTo(langValue) {
+//     const form = document.querySelector(formSelector);
+//     if (!form) {
+//       console.log('Target form not found');
+//       return;
+//     }
+
+//     const langFields = Array.from(form.querySelectorAll('.select__control[name="lang"]'));
+//     const rusLangFields = langFields.filter(field => field.value === 'ru' && isVisible(field));
+//     console.log(`Found ${rusLangFields.length} visible language fields with value "ru" inside the target form`);
+
+//     if (rusLangFields.length > 0) {
+//       const lastRusLangField = rusLangFields[rusLangFields.length - 1];
+//       console.log(`Changing language field value "${lastRusLangField.value}" to "${langValue}"`);
+//       lastRusLangField.value = langValue;
+//       lastRusLangField.dispatchEvent(new Event('change'));
+//       console.log(`Last language field changed to "${langValue}"`);
+//     } else {
+//       console.log('No visible "ru" language field found to change');
+//     }
+//   }
+
+//   // Функция для изменения значения типа "main" на "short" внутри указанной формы
+//   function changeLastTypeFieldToShort() {
+//     const form = document.querySelector(formSelector);
+//     if (!form) {
+//       console.log('Target form not found');
+//       return;
+//     }
+
+//     const typeFields = Array.from(form.querySelectorAll('.select__control[name="type"]'));
+//     const mainTypeFields = typeFields.filter(field => field.value === 'main' && isVisible(field));
+//     console.log(`Found ${mainTypeFields.length} visible type fields with value "main" inside the target form`);
+
+//     if (mainTypeFields.length > 0) {
+//       const lastMainTypeField = mainTypeFields[mainTypeFields.length - 1];
+//       console.log(`Changing type field value "${lastMainTypeField.value}" to "short"`);
+//       lastMainTypeField.value = 'short';
+//       lastMainTypeField.dispatchEvent(new Event('change'));
+//       console.log(`Last type field changed to "short"`);
+//     } else {
+//       console.log('No visible "main" type field found to change');
+//     }
+//   }
+
+//   // Функция для изменения текста "Названия" на "Короткие" внутри указанной формы
+//   function changeLastNameTextToShort() {
+//     const form = document.querySelector(formSelector);
+//     if (!form) {
+//       console.log('Target form not found');
+//       return;
+//     }
+
+//     const nameButtons = Array.from(form.querySelectorAll('.button__text'));
+//     const nameFields = nameButtons.filter(button => button.innerText.trim() === 'Названия');
+//     console.log(`Found ${nameFields.length} buttons with text "Названия" inside the target form`);
+
+//     if (nameFields.length > 0) {
+//       const lastNameField = nameFields[nameFields.length - 1];
+//       console.log(`Changing name field text "${lastNameField.innerText}" to "Короткие"`);
+//       lastNameField.innerText = 'Короткие';
+//       console.log(`Last name field text changed to "Короткие"`);
+//     } else {
+//       console.log('No button with text "Названия" found to change');
+//     }
+//   }
+
+//   // Проверка, виден ли элемент
+//   function isVisible(element) {
+//     return !(element.style.display === 'none' || element.style.visibility === 'hidden');
+//   }
+
+//   // Выполнение действий с формой
+//   const form = document.querySelector(formSelector);
+//   if (!form) {
+//     console.log('Target form not found');
+//     return;
+//   }
+
+//   const addButton = form.querySelector('.card-section__icon-add.card-section__add');
+//   if (addButton) {
+//     console.log('First click on add button');
+//     addButton.click();
+//     await new Promise(resolve => setTimeout(resolve, 850)); // Wait for 0.8 seconds
+
+//     // Шаг 1: Меняем последнюю строку "Рус." на "Анг.", "ru" на "en"
+//     changeLastRusTextTo('Анг.');
+//     changeLastRusFieldTo('en');
+
+//     console.log('Second click on add button');
+//     addButton.click();
+//     await new Promise(resolve => setTimeout(resolve, 850)); // Wait for 0.8 seconds
+
+//     // Шаг 2: Меняем "Рус." на "Тур.", "ru" на "tr" и "main" на "short"
+//     changeLastRusTextTo('Тур.');
+//     changeLastRusFieldTo('tr');
+//     changeLastTypeFieldToShort();
+//     changeLastNameTextToShort();
+
+//     console.log('Third click on add button');
+//     addButton.click();
+//     await new Promise(resolve => setTimeout(resolve, 850)); // Wait for 0.8 seconds
+
+//     // Шаг 3: Меняем "Рус." на "Анг." и "ru" на "en" и "main" на "short"
+//     changeLastRusTextTo('Анг.');
+//     changeLastRusFieldTo('en');
+//     changeLastTypeFieldToShort();
+//     changeLastNameTextToShort();
+
+//     // Получим значение из строки с "Тур. Название"
+//     const turMainValue = getTurMainValue();
+//     if (turMainValue) {
+//       // Переведем значение
+//       const enMainValue = await translateText(turMainValue, 'en'); // Анг. Название (en main)
+//       const enShortValue = await translateText(turMainValue, 'en'); // Анг. Короткие (en short)
+
+//       // Вставим значение в поля с турецким языком без изменений
+//       setNewValue('tr', 'short', turMainValue); // Тур. Короткие (tr short)
+
+//       // Заменим символы в переведенном значении для английского языка
+//       const replacedEnMainValue = replaceTurkishChars(enMainValue);
+//       const replacedEnShortValue = replaceTurkishChars(enShortValue);
+
+//       // Вставим значение в поля с английским языком
+//       setNewValue('en', 'main', replacedEnMainValue); // Анг. Название (en main)
+//       setNewValue('en', 'short', replacedEnShortValue); // Анг. Короткие (en short)
+//     }
+//   } else {
+//     alert('Add button not found');
+//   }
+// }
